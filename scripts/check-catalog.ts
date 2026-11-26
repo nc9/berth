@@ -2,7 +2,7 @@
 // validators. Exits non-zero on any error. Run `bun scripts/build-catalog.ts` first.
 import { readFileSync } from "node:fs";
 import { validateProviders } from "../packages/berth/src/index.ts";
-import { checkSchema } from "./json-schema.ts";
+import { checkSchema } from "../packages/berth/src/catalog/json-schema.ts";
 
 export function checkCatalog(
   catalog: unknown,

@@ -1,5 +1,6 @@
 import type { Provider } from "./types.ts";
-import { SCHEMA_VERSION } from "./schema.ts";
+import { checkSchema } from "./json-schema.ts";
+import { catalogSchema, SCHEMA_VERSION } from "./schema.ts";
 import { validateProviders } from "./validate.ts";
 
 export interface MergeOptions {
@@ -67,7 +68,13 @@ export function mergeCatalog(
     const id = remote.meta.id;
     let errors: string[];
     try {
-      errors = validateProviders([remote]);
+      errors = checkSchema(
+        catalogSchema,
+        remote,
+        { $ref: "#/$defs/Provider" },
+        "provider",
+      );
+      if (errors.length === 0) errors = validateProviders([remote]);
     } catch (e) {
       errors = [e instanceof Error ? e.message : String(e)];
     }

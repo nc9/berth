@@ -78,6 +78,7 @@ const mine = createCatalog(mergeCatalog(builtInProviders, remote));
 - A remote provider wins only when its `meta.verifiedAt` is newer.
 - Providers the built-in data does not know are added.
 - A malformed remote is ignored with a warning (pass `{ warn }` to capture it); an invalid provider inside it is skipped.
+- Each remote provider is checked against the published JSON Schema and the validators. The remote source must still be trusted: a newer `meta.verifiedAt` replaces the whole built-in provider, rates included.
 
 `bun run catalog:check` validates the built JSON against the schema and the validators and exits non-zero on any error.
 

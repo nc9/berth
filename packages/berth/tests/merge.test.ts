@@ -89,3 +89,23 @@ test("does not mutate the built-in list", () => {
   run(list, doc([withDate(base, "other", "2026-01-01")]));
   expect(list).toEqual([base]);
 });
+
+test("a provider that is malformed by the schema is skipped with a warning", () => {
+  const base = fixture();
+  const bad = withDate(base, "acme", "2026-12-01");
+  bad.meta.description = "remote";
+  (bad.meta as any).name = 5;
+  (bad.meta as any).status = "nope";
+  (bad as any).extra = true;
+  const t = bad.types[0]!;
+  (t as any).kind = "whatever";
+  if (t.price) {
+    (t.price as any).granularity = "hour";
+    (t.price as any).billing = "bogus";
+    (t.price as any).currency = "GBP";
+  }
+  const { out, warnings } = run([base], doc([bad]));
+  expect(out).toEqual([base]);
+  expect(warnings).toHaveLength(1);
+  expect(warnings[0]).toContain("ignoring remote provider acme");
+});
