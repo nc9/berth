@@ -113,6 +113,10 @@ export function validateAuth(p: ProviderMeta): string[] {
       errs.push(`${l}: status must be verified or unverified`);
     if (m.status === "unverified" && !m.notes)
       errs.push(`${l}: unverified method needs the reason in notes`);
+    if (!Array.isArray(m.fields)) {
+      errs.push(`${l}: fields must be an array`);
+      continue;
+    }
     for (const d of dupes(m.fields.map((f) => f.name)))
       errs.push(`${l}: duplicate field name "${d}"`);
     for (const f of m.fields) {

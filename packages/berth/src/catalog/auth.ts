@@ -1,6 +1,10 @@
 import type { AuthMethod, ProviderMeta } from "./types.ts";
 
-/** Env var names of the default method's fields, in order. */
+/**
+ * Env var names of the default method's fields, in order, required or not.
+ * Optional fields are included so envVars stays a superset of what earlier
+ * releases listed; use `auth` to tell required from optional.
+ */
 export function envVarsFromAuth(auth: AuthMethod[]): string[] {
   const m = auth.find((a) => a.default === true);
   return m ? m.fields.flatMap((f) => (f.env ? [f.env] : [])) : [];

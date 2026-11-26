@@ -144,10 +144,54 @@ export const AUTH = {
           "AZURE_CLIENT_SECRET",
           "One of the application's client secrets.",
         ),
+        plain(
+          "subscription-id",
+          "AZURE_SUBSCRIPTION_ID",
+          "Azure subscription to create resources in.",
+          { required: false },
+        ),
+      ],
+      verified: false,
+      notes:
+        "Tenant, client id and client secret are stated on the docs page. AZURE_SUBSCRIPTION_ID is not named there; it is kept because earlier envVars listed it, so the subscription-id field is unverified.",
+    }),
+    method({
+      id: "service-principal-certificate",
+      kind: "oauth_client",
+      label: "Entra service principal (certificate)",
+      docsUrl: AZ_ENV,
+      fields: [
+        plain(
+          "tenant-id",
+          "AZURE_TENANT_ID",
+          "ID of the application's Microsoft Entra tenant.",
+        ),
+        plain(
+          "client-id",
+          "AZURE_CLIENT_ID",
+          "ID of a Microsoft Entra application.",
+        ),
+        plain(
+          "client-certificate-path",
+          "AZURE_CLIENT_CERTIFICATE_PATH",
+          "Path to a PEM or PKCS12 certificate file including the private key.",
+        ),
+        secret(
+          "client-certificate-password",
+          "AZURE_CLIENT_CERTIFICATE_PASSWORD",
+          "Password of the certificate file, if it has one.",
+          false,
+        ),
+        plain(
+          "subscription-id",
+          "AZURE_SUBSCRIPTION_ID",
+          "Azure subscription to create resources in.",
+          { required: false },
+        ),
       ],
       verified: true,
       notes:
-        "The docs page names no subscription variable, so none is recorded; consumers pass the subscription to the adapter.",
+        "Certificate variables are stated on the docs page. AZURE_SUBSCRIPTION_ID is not named there (see service-principal).",
     }),
     method({
       id: "workload-identity",
@@ -180,10 +224,16 @@ export const AUTH = {
           "GOOGLE_APPLICATION_CREDENTIALS",
           "Path to the service account key JSON file.",
         ),
+        plain(
+          "project-id",
+          "GOOGLE_CLOUD_PROJECT",
+          "Google Cloud project id.",
+          { required: false },
+        ),
       ],
-      verified: true,
+      verified: false,
       notes:
-        "The ADC page names no project variable, so none is recorded. It warns that service account keys are a security risk.",
+        "GOOGLE_APPLICATION_CREDENTIALS is stated on the ADC page; the page also warns that service account keys are a security risk. It names no project variable: GOOGLE_CLOUD_PROJECT is kept because earlier envVars listed it, so the project-id field is unverified. The credentials field is secret here because the file holds a private key; the workload identity file holds none.",
     }),
     method({
       id: "workload-identity",
@@ -197,8 +247,16 @@ export const AUTH = {
           "Path to a Workload Identity Federation credential configuration file. Omit on a resource with an attached service account.",
           { required: false },
         ),
+        plain(
+          "project-id",
+          "GOOGLE_CLOUD_PROJECT",
+          "Google Cloud project id.",
+          { required: false },
+        ),
       ],
-      verified: true,
+      verified: false,
+      notes:
+        "GOOGLE_APPLICATION_CREDENTIALS is stated on the ADC page. GOOGLE_CLOUD_PROJECT is not named there (see service-account-json), so the project-id field is unverified.",
     }),
   ],
   boatdev: [

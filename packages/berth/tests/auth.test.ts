@@ -39,7 +39,24 @@ describe("auth data", () => {
       "AWS_SESSION_TOKEN",
       "AWS_REGION",
     ]);
-    expect(env("gcp")).toEqual(["GOOGLE_APPLICATION_CREDENTIALS"]);
+    expect(env("gcp")).toEqual([
+      "GOOGLE_APPLICATION_CREDENTIALS",
+      "GOOGLE_CLOUD_PROJECT",
+    ]);
+    expect(env("azure")).toEqual([
+      "AZURE_TENANT_ID",
+      "AZURE_CLIENT_ID",
+      "AZURE_CLIENT_SECRET",
+      "AZURE_SUBSCRIPTION_ID",
+    ]);
+    for (const [id, old] of [
+      ["aws", ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"]],
+      ["boatdev", ["BOAT_API_KEY"]],
+      ["daytona", ["DAYTONA_API_KEY"]],
+      ["e2b", ["E2B_API_KEY"]],
+      ["morph", ["MORPH_API_KEY"]],
+    ] as const)
+      for (const n of old) expect(env(id)).toContain(n);
   });
 
   test("multi-method providers list each method", () => {
@@ -48,6 +65,11 @@ describe("auth data", () => {
         .find((p) => p.meta.id === id)!
         .meta.auth.map((a) => a.kind);
     expect(kinds("aws")).toEqual(["iam_keys", "iam_role"]);
+    expect(kinds("azure")).toEqual([
+      "oauth_client",
+      "oauth_client",
+      "workload_identity",
+    ]);
     expect(kinds("gcp")).toEqual(["service_account_json", "workload_identity"]);
   });
 });
@@ -143,5 +165,30 @@ describe("validateAuthConfig", () => {
   test("unknown provider or method throws", () => {
     expect(() => validateAuthConfig("nope", "x", {})).toThrow();
     expect(() => validateAuthConfig("aws", "nope", {})).toThrow();
+  });
+});
+
+describe("auth config for project and subscription ids", () => {
+  test("stored gcp project and azure subscription are known fields", () => {
+    expect(
+      validateAuthConfig("gcp", "service-account-json", {
+        credentials: "present",
+        "project-id": "p",
+      }).ok,
+    ).toBe(true);
+    expect(
+      validateAuthConfig("azure", "service-principal", {
+        "tenant-id": "t",
+        "client-id": "c",
+        "client-secret": "present",
+        "subscription-id": "s",
+      }).ok,
+    ).toBe(true);
+  });
+
+  test("a method without a fields array is reported, not thrown", () => {
+    const m = meta();
+    (m.auth[0] as { fields?: unknown }).fields = undefined;
+    expect(validateProvider(m).join()).toContain("fields must be an array");
   });
 });
