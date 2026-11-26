@@ -58,16 +58,19 @@ describe("create mapping", () => {
     expect(modal.createCalls[0]!.gpu).toBe("T4");
   });
 
-  test("describe reads back labels without reserved tags", async () => {
+  test("describe reports no resources or egress, only a requested echo", async () => {
     const { p } = setup();
     const { id } = await p.create(
       spec({ resources: { vcpu: 2, memoryMiB: 1024 }, region: "us-east-1" }),
     );
     const d = await p.describe(id);
     expect(d.labels).toEqual({ team: "ci" });
-    expect(d.resources).toEqual({ vcpu: 2, memoryMiB: 1024 });
+    expect(MODAL_INFO.readback).toEqual({ resources: "none", egress: "none" });
+    expect(d.resources).toEqual({});
+    expect(d.egress).toBeUndefined();
+    expect(d.requested?.resources).toEqual({ vcpu: 2, memoryMiB: 1024 });
+    expect(d.requested?.egress).toEqual({ policy: "open" });
     expect(d.region).toBe("us-east-1");
-    expect(d.egress).toEqual({ policy: "open" });
   });
 
   test("refuses sources, disk and reserved labels Modal cannot honour", async () => {
@@ -107,7 +110,7 @@ describe("egress", () => {
     expect(c.outboundDomainAllowlist).toEqual(["*.example.com"]);
     expect(c.outboundCidrAllowlist).toEqual(["10.0.0.0/8"]);
     expect(c.blockNetwork).toBeUndefined();
-    expect((await p.describe(id)).egress).toEqual({
+    expect((await p.describe(id)).requested?.egress).toEqual({
       policy: "allowlist",
       domains: ["*.example.com"],
       cidrs: ["10.0.0.0/8"],

@@ -54,6 +54,7 @@ export const MODAL_INFO = {
   arch: [],
   pause: false,
   snapshot: false,
+  readback: { resources: "none", egress: "none" },
 } as const satisfies ProviderInfo;
 
 export type ModalInfo = typeof MODAL_INFO;
@@ -293,11 +294,13 @@ export function createModalProvider(
       const cidrs = csv(meta[T.cidrs]);
       if (domains) egress.domains = domains;
       if (cidrs) egress.cidrs = cidrs;
+      // Modal reports neither resources nor egress: they go under
+      // `requested` (our echo), never into `resources` / `egress`.
       const out: SandboxDescription = {
         id,
         labels,
-        resources,
-        egress,
+        resources: {},
+        requested: { resources, egress },
         state: "running" as SandboxState,
       };
       if (meta[T.region]) out.region = meta[T.region];

@@ -68,15 +68,29 @@ export interface SandboxHandle {
 export type SandboxState =
   "creating" | "running" | "paused" | "stopped" | "destroyed" | "unknown";
 
-/** What the provider reports back. Consumers verify this after create. */
+/**
+ * What the provider reports back. Consumers verify this after create.
+ * `resources` and `egress` hold only what the provider itself reports:
+ * when `info.readback.<field>` is "none" they are empty / absent.
+ */
 export interface SandboxDescription {
   id: string;
   labels: Labels;
+  /** Provider-reported. Empty when `info.readback.resources` is "none". */
   resources: SandboxResources;
-  egress: EgressSpec;
+  /** Provider-reported. Absent when `info.readback.egress` is "none". */
+  egress?: EgressSpec;
+  /**
+   * What the adapter asked for, kept by the adapter. This is NOT confirmed by
+   * the provider: never treat it as verification.
+   */
+  requested?: { resources?: SandboxResources; egress?: EgressSpec };
   state: SandboxState;
   region?: string;
 }
+
+/** Whether describe() can read a field back from the provider itself. */
+export type ReadbackSource = "provider" | "none";
 
 export interface ExecStartOptions {
   command: string[];
@@ -153,6 +167,11 @@ export interface ProviderInfo {
   arch: readonly Arch[];
   pause: boolean;
   snapshot: boolean;
+  /**
+   * Which describe() fields come from the provider. "none" means the provider
+   * has no readback, so the field is left out of describe() (see `requested`).
+   */
+  readback: { resources: ReadbackSource; egress: ReadbackSource };
 }
 
 export interface ProviderPause {

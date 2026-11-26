@@ -20,7 +20,7 @@ Credentials come from the consumer at construction. The adapter never reads them
 
 ## Known limits
 
-- The SDK exposes no readback of resources or egress. `describe` returns what the adapter recorded in reserved `berth.modal/*` tags at create time, which is an echo and not Modal's own report. Do not treat it as independent verification.
+- Modal cannot read back cpu, memory or egress. `info.readback` is "none" for both, so `describe().resources` is empty and `describe().egress` is absent. What the adapter asked for is in `describe().requested` (kept in reserved `berth.modal/*` tags): it is our echo, not Modal's confirmation. A consumer that needs verified egress must not rely on Modal for egress-restricted work.
 - The Modal SDK itself may read `MODAL_*` env vars and `~/.modal.toml` for non-credential settings (server URL and the like). Explicit tokens passed here take precedence.
 
 ## Tests
