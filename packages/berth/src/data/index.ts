@@ -3,6 +3,7 @@ import { aws } from "./aws.ts";
 import { azure } from "./azure.ts";
 import { beam } from "./beam.ts";
 import { blaxel } from "./blaxel.ts";
+import { boatdev } from "./boatdev.ts";
 import { boxd } from "./boxd.ts";
 import { cloudflare } from "./cloudflare.ts";
 import { daytona } from "./daytona.ts";
@@ -20,6 +21,7 @@ export const baseProviders: Provider[] = [
   aws,
   azure,
   gcp,
+  boatdev,
   boxd,
   morph,
   blaxel,
