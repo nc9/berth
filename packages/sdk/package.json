@@ -1,0 +1,8 @@
+{
+  "name": "@nc9/berth-sdk",
+  "version": "0.0.0",
+  "description": "The provider contract every berth adapter implements.",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "license": "MIT"
+}

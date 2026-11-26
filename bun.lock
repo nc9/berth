@@ -12,9 +12,15 @@
       "name": "@nc9/berth",
       "version": "0.0.0",
     },
+    "packages/sdk": {
+      "name": "@nc9/berth-sdk",
+      "version": "0.0.0",
+    },
   },
   "packages": {
     "@nc9/berth": ["@nc9/berth@workspace:packages/berth"],
+
+    "@nc9/berth-sdk": ["@nc9/berth-sdk@workspace:packages/sdk"],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
