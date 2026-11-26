@@ -1,0 +1,8 @@
+{
+  "name": "@nc9/berth",
+  "version": "0.0.0",
+  "description": "Container and sandbox provider catalog: providers, container types, capabilities and prices.",
+  "type": "module",
+  "license": "MIT",
+  "exports": "./src/index.ts"
+}

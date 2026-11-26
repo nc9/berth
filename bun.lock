@@ -8,6 +8,10 @@
         "@types/bun": "1.4.4",
       },
     },
+    "packages/berth": {
+      "name": "@nc9/berth",
+      "version": "0.0.0",
+    },
     "packages/conformance": {
       "name": "@nc9/berth-conformance",
       "version": "0.0.0",
@@ -21,6 +25,8 @@
     },
   },
   "packages": {
+    "@nc9/berth": ["@nc9/berth@workspace:packages/berth"],
+
     "@nc9/berth-conformance": ["@nc9/berth-conformance@workspace:packages/conformance"],
 
     "@nc9/berth-sdk": ["@nc9/berth-sdk@workspace:packages/sdk"],
