@@ -79,20 +79,23 @@ describe("boat.dev", () => {
       catalog.find({ os: "windows" }).some((t) => t.provider === "boatdev"),
     ).toBe(false);
   });
-  test("prices carry raw, source and date; egress is not documented", () => {
+  test("prices carry raw, source and date; egress is allowlist-capable", () => {
     for (const t of catalog.getTypes("boatdev"))
       for (const r of t.price!.rates) {
         expect(r.raw?.unit).toContain("per hour");
         expect(r.sourceUrl).toStartWith("https://docs.boat.dev/");
         expect(r.verifiedAt).toBeTruthy();
       }
-    expect(
-      catalog.getProvider("boatdev")?.capabilities?.egress,
-    ).toBeUndefined();
+    expect(catalog.getProvider("boatdev")?.capabilities?.egress).toEqual({
+      policies: ["open", "none", "allowlist"],
+      domainMax: 100,
+      cidrMax: 100,
+      runtimeUpdate: true,
+    });
     expect(
       catalog
         .find({ egress: "allowlist" })
         .some((t) => t.provider === "boatdev"),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
