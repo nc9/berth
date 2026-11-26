@@ -1,1 +1,5 @@
+packages/sdk/tests/can-apply.test.ts
+packages/sdk/tests/errors.test.ts
+packages/sdk/tests/isolation.test.ts
+packages/sdk/tests/provider.test.ts
 scripts/test-list.test.ts
