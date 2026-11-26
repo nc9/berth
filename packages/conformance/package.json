@@ -1,0 +1,11 @@
+{
+  "name": "@nc9/berth-conformance",
+  "version": "0.0.0",
+  "description": "The conformance suite every berth adapter must pass, plus an in-memory fake provider.",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@nc9/berth-sdk": "workspace:*"
+  }
+}
