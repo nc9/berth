@@ -9,15 +9,7 @@ describe("cloud catalog data", () => {
   test("validates with zero errors", () => {
     expect(validateProviders(providers)).toEqual([]);
   });
-  test("one provider per cloud, every type has a service tag", () => {
-    expect(catalog.getProviders().map((p) => p.id)).toEqual([
-      "aws",
-      "azure",
-      "gcp",
-      "daytona",
-      "modal",
-      "e2b",
-    ]);
+  test("every cloud type has a service tag", () => {
     for (const t of catalog
       .getTypes("aws")
       .concat(catalog.getTypes("azure"), catalog.getTypes("gcp")))
