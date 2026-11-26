@@ -57,3 +57,42 @@ describe("native provider data", () => {
     expect(e.usd).toBeCloseTo(0.5 * 0.128 + 4 * 0.0212, 10);
   });
 });
+
+describe("boat.dev", () => {
+  test("is registered with its four documented sizes", () => {
+    expect(catalog.getProvider("boatdev")?.website).toBe("https://boat.dev");
+    expect(
+      catalog
+        .getTypes("boatdev")
+        .map((t) => t.id)
+        .sort(),
+    ).toEqual(["default", "large", "small", "xlarge"]);
+  });
+  test("find returns boat.dev types for linux and a size", () => {
+    const found = catalog
+      .find({ os: "linux", minVcpu: 16, minMemoryMiB: 32768 })
+      .filter((t) => t.provider === "boatdev");
+    expect(found.map((t) => t.id)).toEqual(["xlarge"]);
+    const all = catalog.find({ os: "linux", region: "de" });
+    expect(all.filter((t) => t.provider === "boatdev")).toHaveLength(4);
+    expect(
+      catalog.find({ os: "windows" }).some((t) => t.provider === "boatdev"),
+    ).toBe(false);
+  });
+  test("prices carry raw, source and date; egress is not documented", () => {
+    for (const t of catalog.getTypes("boatdev"))
+      for (const r of t.price!.rates) {
+        expect(r.raw?.unit).toContain("per hour");
+        expect(r.sourceUrl).toStartWith("https://docs.boat.dev/");
+        expect(r.verifiedAt).toBeTruthy();
+      }
+    expect(
+      catalog.getProvider("boatdev")?.capabilities?.egress,
+    ).toBeUndefined();
+    expect(
+      catalog
+        .find({ egress: "allowlist" })
+        .some((t) => t.provider === "boatdev"),
+    ).toBe(false);
+  });
+});

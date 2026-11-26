@@ -11,6 +11,7 @@ describe("catalog", () => {
       "aws",
       "azure",
       "gcp",
+      "boatdev",
       "boxd",
       "morph",
       "blaxel",

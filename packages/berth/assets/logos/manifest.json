@@ -71,6 +71,13 @@
         }
       ]
     },
+    "boatdev": {
+      "domain": "boat.dev",
+      "retrievedAt": "2026-11-26T12:00:00.000Z",
+      "source": "context.dev",
+      "missing": true,
+      "reason": "not fetched yet"
+    },
     "boxd": {
       "domain": "boxd.sh",
       "retrievedAt": "2026-11-26T10:01:22.012Z",
