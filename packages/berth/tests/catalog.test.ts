@@ -6,11 +6,20 @@ const c = createCatalog([fixture()]);
 const ids = (r: { id: string }[]) => r.map((t) => t.id).sort();
 
 describe("catalog", () => {
-  test("default catalog holds the cloud providers", () => {
+  test("default catalog holds the cloud and native providers", () => {
     expect(catalog.getProviders().map((p) => p.id)).toEqual([
       "aws",
       "azure",
       "gcp",
+      "boxd",
+      "morph",
+      "blaxel",
+      "vercel",
+      "cloudflare",
+      "fly",
+      "runloop",
+      "northflank",
+      "beam",
     ]);
   });
   test("lookups", () => {

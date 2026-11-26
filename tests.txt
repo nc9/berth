@@ -1,6 +1,7 @@
 packages/berth/tests/catalog.test.ts
 packages/berth/tests/clouds.test.ts
 packages/berth/tests/cost.test.ts
+packages/berth/tests/native.test.ts
 packages/berth/tests/validate.test.ts
 packages/conformance/tests/fake.test.ts
 packages/sdk/tests/can-apply.test.ts
