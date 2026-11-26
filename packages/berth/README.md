@@ -1,41 +1,83 @@
 # @nc9/berth
 
-Catalog of container and sandbox providers: providers, container types, capabilities and prices. Zero runtime dependencies. Memory is in MiB everywhere.
+Catalog of container and sandbox providers: providers, container types, capabilities and prices.
+
+## Install
+
+```sh
+bun add @nc9/berth
+```
+
+Zero runtime dependencies. Memory is in MiB everywhere.
+
+## Use
 
 ```ts
-import { catalog, createCatalog, type Provider } from "@nc9/berth";
+import { catalog } from "@nc9/berth";
 
-// Built-in data (empty until provider data lands).
+// All providers (name, website, docs, regions, status, verifiedAt).
 catalog.getProviders();
 
-// Custom data: createCatalog validates it and throws listing every error.
-const mine = createCatalog([acme satisfies Provider]);
-
-mine.getProvider("acme");
-mine.getTypes("acme");
-mine.getType("acme", "gpu");
-
-// Filter types.
-mine.find({
+// Filter container types.
+const types = catalog.find({
   os: "linux",
   gpuType: "h100",
-  gpuCount: 2,
   minMemoryMiB: 16384,
-  region: "us-east",
   minIsolation: "microvm",
   egress: "allowlist",
   status: "ga",
 });
 
 // Estimate cost. Range types need vcpu / memoryMiB; active-cpu billing needs cpuSeconds.
-const { usd, breakdown, billing, verifiedAt } = mine.estimateCost(type, {
-  seconds: 3600,
-  vcpu: 2,
-  memoryMiB: 4096,
-  region: "eu-west",
-});
+const { usd, breakdown, skipped, verifiedAt } = catalog.estimateCost(
+  types[0]!,
+  {
+    seconds: 3600,
+    vcpu: 2,
+    memoryMiB: 4096,
+    region: "us-east",
+  },
+);
 ```
 
-Validators: `validateProvider(meta)`, `validateContainerType(type, meta?)` and `validateProviders(list)` return arrays of error strings.
+`estimateCost` prices only time-based dimensions (vcpu, memory, gpu, and disk when `diskGiBHours` is given). Rates it did not use are listed in `skipped`, so `usd` is never silently partial.
 
-Every price rate carries `verifiedAt`, `sourceUrl` and optionally the vendor's `raw` value and unit. `estimateCost` prices only time-based dimensions (vcpu, memory, gpu); disk, egress, creation and snapshot rates are not included.
+## Add a custom provider
+
+`createCatalog` validates the data and throws listing every error.
+
+```ts
+import { builtInProviders, createCatalog, type Provider } from "@nc9/berth";
+
+const acme: Provider = {
+  meta: { id: "acme" /* name, website, docs, pricingUrl, regions, ... */ },
+  types: [
+    { id: "small", provider: "acme" /* vcpu, memoryMiB, os, arch, ... */ },
+  ],
+};
+const mine = createCatalog([...builtInProviders, acme]);
+```
+
+## Pick up newer prices without upgrading
+
+The catalog is also built as public JSON (`bun scripts/build-catalog.ts` writes `dist/catalog.json` and `dist/catalog.schema.json`). `mergeCatalog` overlays a fetched copy on the built-in data:
+
+```ts
+import { builtInProviders, createCatalog, mergeCatalog } from "@nc9/berth";
+
+const remote = await (await fetch(url)).json();
+const mine = createCatalog(mergeCatalog(builtInProviders, remote));
+```
+
+- A remote provider wins only when its `meta.verifiedAt` is newer.
+- Providers the built-in data does not know are added.
+- A malformed remote is ignored with a warning (pass `{ warn }` to capture it); an invalid provider inside it is skipped.
+
+`bun run catalog:check` validates the built JSON against the schema and the validators and exits non-zero on any error.
+
+## Data rules
+
+- Every price rate carries `verifiedAt`, a `sourceUrl` (https) and, where the vendor states one, the raw value and unit (`raw`) so conversions can be audited.
+- Nothing is invented: a field the provider does not document is marked `unverified` (for example `status: "unverified"`, `freeTier: "unverified"`).
+- Validators: `validateProvider`, `validateContainerType` and `validateProviders` return arrays of error strings.
+- No policy: berth reports facts. Trust tiers, ownership rules and ceilings belong to the consumer.

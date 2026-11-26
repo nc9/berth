@@ -16,3 +16,11 @@ export {
   validateProvider,
   validateProviders,
 } from "./catalog/validate.ts";
+export { mergeCatalog } from "./catalog/merge.ts";
+export type { MergeOptions } from "./catalog/merge.ts";
+export {
+  SCHEMA_VERSION,
+  catalogSchema,
+  providerSchema,
+} from "./catalog/schema.ts";
+export { providers as builtInProviders } from "./data/index.ts";
