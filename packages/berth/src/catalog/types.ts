@@ -96,6 +96,8 @@ export interface Rate {
   usd: number;
   /** The vendor's own value and unit, kept for auditing conversions. */
   raw?: { value: number; unit: string };
+  /** Third-party or otherwise unconfirmed number. Treat as an estimate. */
+  unverified?: boolean;
   gpuType?: GpuType;
   /** Multiplier per region id. Regions not listed use 1. */
   regionMultiplier?: Record<string, number>;
@@ -117,6 +119,12 @@ export interface ContainerType {
   id: string;
   provider: string;
   kind: "preset" | "template" | "free-form";
+  /** The product line inside the provider, e.g. "fargate" or "lambda-microvms". */
+  service?: string;
+  /** Overrides the provider status for this type, e.g. a preview product. */
+  status?: Status;
+  /** Facts that do not fit a field, including what is unverified. */
+  notes?: string[];
   vcpu: NumberOrRange;
   /** MiB everywhere. */
   memoryMiB: NumberOrRange;
@@ -131,6 +139,10 @@ export interface ContainerType {
     maxConcurrent?: number;
     planGate?: string;
   };
+  /**
+   * Rates are listed only where a source gives a number. A missing price (or a
+   * missing dimension inside `rates`) means "not documented", never "free".
+   */
   price?: PriceBook;
   /** Per-type override of the provider's capabilities. */
   capabilities?: Capabilities;
