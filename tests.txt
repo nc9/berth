@@ -1,6 +1,7 @@
 packages/berth/tests/catalog.test.ts
 packages/berth/tests/clouds.test.ts
 packages/berth/tests/cost.test.ts
+packages/berth/tests/logos.test.ts
 packages/berth/tests/merge.test.ts
 packages/berth/tests/native-providers.test.ts
 packages/berth/tests/native.test.ts
@@ -17,4 +18,5 @@ packages/sdk/tests/errors.test.ts
 packages/sdk/tests/isolation.test.ts
 packages/sdk/tests/provider.test.ts
 scripts/catalog.test.ts
+scripts/fetch-logos.test.ts
 scripts/test-list.test.ts

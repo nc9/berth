@@ -1,0 +1,260 @@
+{
+  "providers": {
+    "aws": {
+      "domain": "aws.amazon.com",
+      "retrievedAt": "2026-11-26T10:13:30.446Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/aws/icon-opaque.png",
+          "kind": "icon",
+          "mode": "opaque",
+          "sourceUrl": "https://media.brand.dev/7de990d8-02b3-4607-b62d-53c178fd7393.png"
+        }
+      ]
+    },
+    "azure": {
+      "domain": "azure.microsoft.com",
+      "retrievedAt": "2026-11-26T10:01:20.838Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/azure/icon-dark.png",
+          "kind": "icon",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/27566518-dea2-426d-8d80-eb5fae16b603.png"
+        },
+        {
+          "path": "packages/berth/assets/logos/azure/logo-light.png",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/28c90d46-f47e-4f8d-bc50-73483be9af84.png"
+        }
+      ]
+    },
+    "beam": {
+      "domain": "beam.cloud",
+      "retrievedAt": "2026-11-26T10:01:21.228Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/beam/icon-light.png",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/282e60ce-f0ff-4be1-9fb6-f6457e6a2714.png"
+        }
+      ],
+      "notes": ["icon-light: skipped svg (CDATA is not supported)"]
+    },
+    "blaxel": {
+      "domain": "blaxel.ai",
+      "retrievedAt": "2026-11-26T10:01:21.590Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/blaxel/icon-light.png",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/cad95ecc-4bff-49dd-b152-a928586c67f0.png"
+        },
+        {
+          "path": "packages/berth/assets/logos/blaxel/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/c04aa4f7-7e70-4dcd-80ab-3e9b10213c30.svg"
+        },
+        {
+          "path": "packages/berth/assets/logos/blaxel/logo-dark.svg",
+          "kind": "logo",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/63285562-7428-4636-873a-ca2312e5fe88.svg"
+        }
+      ]
+    },
+    "boxd": {
+      "domain": "boxd.sh",
+      "retrievedAt": "2026-11-26T10:01:22.012Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/boxd/icon-dark.svg",
+          "kind": "icon",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/8e002dd7-6e5e-4307-aa06-fe7b43ce98f3.svg"
+        }
+      ]
+    },
+    "cloudflare": {
+      "domain": "developers.cloudflare.com",
+      "retrievedAt": "2026-11-26T10:01:22.214Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/cloudflare/icon-dark.png",
+          "kind": "icon",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/59d2712c-267d-48b2-81b2-15f12a88ba71.png"
+        },
+        {
+          "path": "packages/berth/assets/logos/cloudflare/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/a4dc3222-af14-44d8-9ed7-1f519017ab4d.svg"
+        },
+        {
+          "path": "packages/berth/assets/logos/cloudflare/logo-dark.svg",
+          "kind": "logo",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/bd14736b-0258-42db-b768-74135963ad81.svg"
+        }
+      ]
+    },
+    "daytona": {
+      "domain": "www.daytona.io",
+      "retrievedAt": "2026-11-26T10:13:32.462Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/daytona/icon-opaque.png",
+          "kind": "icon",
+          "mode": "opaque",
+          "sourceUrl": "https://media.brand.dev/f09a4bda-f563-40a5-a204-8d9328ec1ad6.png"
+        }
+      ]
+    },
+    "e2b": {
+      "domain": "e2b.dev",
+      "retrievedAt": "2026-11-26T10:01:22.729Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/e2b/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/d162677d-8101-420a-ad19-d222735269bf.svg"
+        }
+      ]
+    },
+    "fly": {
+      "domain": "fly.io",
+      "retrievedAt": "2026-11-26T10:01:22.926Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/fly/icon-light.svg",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/b0fa67a4-5932-4fc2-ae5f-eb05076bcfd3.svg"
+        },
+        {
+          "path": "packages/berth/assets/logos/fly/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/f8dd4fc1-e81b-4f0c-a55d-cc8e1eaf851d.svg"
+        }
+      ]
+    },
+    "gcp": {
+      "domain": "cloud.google.com",
+      "retrievedAt": "2026-11-26T10:01:23.352Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/gcp/icon-dark.png",
+          "kind": "icon",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/f9f7b915-23f7-4d9d-8230-d056136eda84.png"
+        },
+        {
+          "path": "packages/berth/assets/logos/gcp/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/2239d3c8-8535-49f4-b58c-a81ab16065f8.svg"
+        }
+      ]
+    },
+    "modal": {
+      "domain": "modal.com",
+      "retrievedAt": "2026-11-26T10:01:23.646Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/modal/icon-dark.svg",
+          "kind": "icon",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/ceed4bb4-1d1e-42ee-9cc9-161a0520a6a1.svg"
+        },
+        {
+          "path": "packages/berth/assets/logos/modal/logo-light.svg",
+          "kind": "logo",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/f20ff561-9cf8-472e-b1de-927fcacbb14b.svg"
+        },
+        {
+          "path": "packages/berth/assets/logos/modal/logo-dark.svg",
+          "kind": "logo",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/c3e6efa2-241e-4c7e-93a8-64d83f811001.svg"
+        }
+      ]
+    },
+    "morph": {
+      "domain": "cloud.morph.so",
+      "retrievedAt": "2026-11-26T10:01:24.098Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/morph/icon-light.png",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/f4320aea-99ab-40c8-bc10-973ea08a86e4.png"
+        }
+      ]
+    },
+    "northflank": {
+      "domain": "northflank.com",
+      "retrievedAt": "2026-11-26T10:01:29.456Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/northflank/logo-dark.svg",
+          "kind": "logo",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/0cd1dec1-f6b7-413e-9be8-885fce1b471a.svg"
+        }
+      ]
+    },
+    "runloop": {
+      "domain": "runloop.ai",
+      "retrievedAt": "2026-11-26T10:01:29.725Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/runloop/icon-light.png",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/522ac056-73db-4dcd-a5ed-357ce72b6e76.png"
+        },
+        {
+          "path": "packages/berth/assets/logos/runloop/logo-dark.svg",
+          "kind": "logo",
+          "mode": "dark",
+          "sourceUrl": "https://media.brand.dev/d7b8e2b4-1e20-4d09-9c12-47d174b45e1d.svg"
+        }
+      ]
+    },
+    "vercel": {
+      "domain": "vercel.com",
+      "retrievedAt": "2026-11-26T10:01:30.013Z",
+      "source": "context.dev",
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/vercel/icon-light.png",
+          "kind": "icon",
+          "mode": "light",
+          "sourceUrl": "https://media.brand.dev/fdef54f6-5b55-45e8-bb21-096f0e20a845.png"
+        }
+      ]
+    }
+  }
+}
