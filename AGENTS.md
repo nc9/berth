@@ -2,6 +2,7 @@
 
 A container and sandbox provider registry and SDK, shared by Longshore and Turntable. Read `DESIGN.md` first.
 
+- **Bun for everything:** installs, scripts, tests, typecheck, formatting and one-off scripting (`bun -e`, `bun scripts/x.ts`). No npm, npx, node, python or other runtimes.
 - **Tooling:** bun built-ins only: `bun check` (typecheck), `bun fmt` / `bun fmt --check`, and `bun test` with explicit file paths. No eslint, prettier or tsc. TypeScript only, kebab-case file names.
 - **Layout (planned):** `packages/sdk` (the `Provider` interface), `packages/catalog` (records plus refreshers), `packages/conformance`, `packages/<provider>` (adapters).
 - **Data rules:**
