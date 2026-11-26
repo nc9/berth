@@ -162,7 +162,7 @@ const logoModes = shape<LogoModes>({
 
 const authField = shape<AuthField>({
   name: req(str),
-  env: req(str),
+  env: opt(str),
   secret: req(bool),
   required: req(bool),
   description: req(str),

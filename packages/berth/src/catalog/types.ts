@@ -92,8 +92,8 @@ export type AuthStatus = (typeof AUTH_STATUS_VALUES)[number];
 export interface AuthField {
   /** Stable id within the method. */
   name: string;
-  /** Conventional environment variable name. */
-  env: string;
+  /** Environment variable name as the vendor docs state it; omitted when the docs name none. */
+  env?: string;
   secret: boolean;
   required: boolean;
   description: string;

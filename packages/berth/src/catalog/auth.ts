@@ -3,7 +3,7 @@ import type { AuthMethod, ProviderMeta } from "./types.ts";
 /** Env var names of the default method's fields, in order. */
 export function envVarsFromAuth(auth: AuthMethod[]): string[] {
   const m = auth.find((a) => a.default === true);
-  return m ? m.fields.map((f) => f.env) : [];
+  return m ? m.fields.flatMap((f) => (f.env ? [f.env] : [])) : [];
 }
 
 export interface AuthConfigResult {

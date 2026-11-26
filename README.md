@@ -50,7 +50,7 @@ const { usd, breakdown, skipped, verifiedAt } = catalog.estimateCost(
 
 ## Auth methods
 
-Each provider lists how to authenticate in `meta.auth`: one or more methods (`api_key`, `token_pair`, `iam_keys`, `iam_role`, ...), exactly one marked `default`. A method has `fields` with a stable `name`, the conventional `env` variable, `secret`, `required` and a description. Non-secret fields (API URL, region, project id) may carry an `example` or `default`; secret fields never do. `envVars` is derived from the default method's fields. A method not confirmed in the vendor docs is `status: "unverified"` with the reason in `notes`.
+Each provider lists how to authenticate in `meta.auth`: one or more methods (`api_key`, `token_pair`, `iam_keys`, `iam_role`, ...), exactly one marked `default`. A method has `fields` with a stable `name`, the `env` variable exactly as the vendor docs name it (omitted when they name none), `secret`, `required` and a description. Non-secret fields (API URL, region, project id) may carry an `example` or `default`; secret fields never do. `envVars` is derived from the default method's fields. A method not confirmed in the vendor docs is `status: "unverified"` with the reason in `notes`.
 
 Consumers store the config and check it with field presence only, never secret values:
 

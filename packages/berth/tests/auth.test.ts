@@ -22,7 +22,9 @@ describe("auth data", () => {
   test("envVars is derived from the default method's fields", () => {
     for (const { meta: m } of builtInProviders) {
       const def = m.auth.find((a) => a.default)!;
-      expect(m.envVars).toEqual(def.fields.map((f) => f.env));
+      expect(m.envVars).toEqual(
+        def.fields.flatMap((f) => (f.env ? [f.env] : [])),
+      );
       expect(m.envVars).toEqual(envVarsFromAuth(m.auth));
     }
   });
@@ -37,10 +39,7 @@ describe("auth data", () => {
       "AWS_SESSION_TOKEN",
       "AWS_REGION",
     ]);
-    expect(env("gcp")).toEqual([
-      "GOOGLE_APPLICATION_CREDENTIALS",
-      "GOOGLE_CLOUD_PROJECT",
-    ]);
+    expect(env("gcp")).toEqual(["GOOGLE_APPLICATION_CREDENTIALS"]);
   });
 
   test("multi-method providers list each method", () => {
