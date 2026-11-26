@@ -3,6 +3,8 @@ packages/berth/tests/clouds.test.ts
 packages/berth/tests/cost.test.ts
 packages/berth/tests/validate.test.ts
 packages/conformance/tests/fake.test.ts
+packages/modal/tests/conformance.test.ts
+packages/modal/tests/provider.test.ts
 packages/sdk/tests/can-apply.test.ts
 packages/sdk/tests/errors.test.ts
 packages/sdk/tests/isolation.test.ts
