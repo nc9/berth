@@ -1,9 +1,25 @@
 import type { Arch, EgressPolicy, IsolationClass, Os } from "./primitives.ts";
 import type { GpuType } from "./gpus.ts";
 
-export type Status = "ga" | "preview" | "closed-core" | "unverified";
-export type SizingMode =
-  "free-form" | "presets" | "template" | "snapshot" | "memory-only";
+export const STATUS_VALUES = [
+  "ga",
+  "preview",
+  "closed-core",
+  "unverified",
+] as const;
+export type Status = (typeof STATUS_VALUES)[number];
+export const SIZING_MODES = [
+  "free-form",
+  "presets",
+  "template",
+  "snapshot",
+  "memory-only",
+] as const;
+export type SizingMode = (typeof SIZING_MODES)[number];
+export const DOMAIN_MATCH_VALUES = ["sni", "dns", "sni+host"] as const;
+export const PRICING_SOURCES = ["api", "docs"] as const;
+export const TYPE_KINDS = ["preset", "template", "free-form"] as const;
+export const CURRENCIES = ["USD", "EUR"] as const;
 
 export interface Region {
   id: string;
@@ -25,7 +41,7 @@ export interface Capabilities {
   pause?: { supported: boolean; keepsMemory: boolean };
   egress?: {
     policies: EgressPolicy[];
-    domainMatch?: "sni" | "dns" | "sni+host";
+    domainMatch?: (typeof DOMAIN_MATCH_VALUES)[number];
     domainMax?: number;
     cidrMax?: number;
     mutuallyExclusive?: boolean;
@@ -38,7 +54,11 @@ export interface Capabilities {
   labels?: boolean;
   list?: boolean;
   ingress?: boolean;
-  discovery?: { types: boolean; regions: boolean; pricing: "api" | "docs" };
+  discovery?: {
+    types: boolean;
+    regions: boolean;
+    pricing: (typeof PRICING_SOURCES)[number];
+  };
 }
 
 export interface ProviderMeta {
@@ -71,24 +91,34 @@ export interface GpuSpec {
   preemptible?: boolean;
 }
 
-export type Billing =
-  "wall-clock" | "active-cpu" | "memory-only" | "active-cpu+provisioned-memory";
-export type Granularity = "ms" | "10ms" | "s" | "min";
-export type RateDimension =
-  | "vcpu"
-  | "memory"
-  | "disk"
-  | "gpu"
-  | "creation"
-  | "egress"
-  | "snapshot-storage";
-export type RateUnit =
-  | "per-vcpu-hour"
-  | "per-gib-hour"
-  | "per-gb-month"
-  | "per-gpu-hour"
-  | "per-1M-creations"
-  | "per-gb";
+export const BILLING_VALUES = [
+  "wall-clock",
+  "active-cpu",
+  "memory-only",
+  "active-cpu+provisioned-memory",
+] as const;
+export type Billing = (typeof BILLING_VALUES)[number];
+export const GRANULARITIES = ["ms", "10ms", "s", "min"] as const;
+export type Granularity = (typeof GRANULARITIES)[number];
+export const RATE_DIMENSIONS = [
+  "vcpu",
+  "memory",
+  "disk",
+  "gpu",
+  "creation",
+  "egress",
+  "snapshot-storage",
+] as const;
+export type RateDimension = (typeof RATE_DIMENSIONS)[number];
+export const RATE_UNITS = [
+  "per-vcpu-hour",
+  "per-gib-hour",
+  "per-gb-month",
+  "per-gpu-hour",
+  "per-1M-creations",
+  "per-gb",
+] as const;
+export type RateUnit = (typeof RATE_UNITS)[number];
 
 export interface Rate {
   dimension: RateDimension;
@@ -106,7 +136,7 @@ export interface Rate {
 }
 
 export interface PriceBook {
-  currency: "USD" | "EUR";
+  currency: (typeof CURRENCIES)[number];
   billing: Billing;
   granularity: Granularity;
   minimums?: { vcpu?: number; memoryMiB?: number; billedMinutes?: number };
@@ -118,7 +148,7 @@ export interface PriceBook {
 export interface ContainerType {
   id: string;
   provider: string;
-  kind: "preset" | "template" | "free-form";
+  kind: (typeof TYPE_KINDS)[number];
   /** The product line inside the provider, e.g. "fargate" or "lambda-microvms". */
   service?: string;
   /** Overrides the provider status for this type, e.g. a preview product. */
