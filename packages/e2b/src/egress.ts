@@ -9,6 +9,9 @@ import type { E2bNetwork, E2bSandboxInfo } from "./transport.ts";
 /** E2B's "all traffic" CIDR (`ALL_TRAFFIC` in the e2b package). */
 export const ALL_TRAFFIC = "0.0.0.0/0";
 
+/** E2B's default DNS server, reachable whenever allowOut has a domain. */
+export const DEFAULT_DNS = "8.8.8.8";
+
 const CIDR_OR_IP = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/;
 
 /**
@@ -60,14 +63,18 @@ export function mapEgress(
 
 /** The egress E2B reports for a sandbox, in berth terms. */
 export function readEgress(info: E2bSandboxInfo): EgressSpec {
-  if (info.allowInternetAccess === false) return { policy: "none" };
-  const denyAll = info.network?.denyOut?.includes(ALL_TRAFFIC) ?? false;
+  const denyAll =
+    info.allowInternetAccess === false ||
+    (info.network?.denyOut?.includes(ALL_TRAFFIC) ?? false);
   if (!denyAll) return { policy: "open" };
+  // allowOut beats deny, so entries stay reachable even with internet off.
   const allow = info.network?.allowOut ?? [];
   if (allow.length === 0) return { policy: "none" };
-  return {
-    policy: "allowlist",
-    domains: allow.filter((e) => !CIDR_OR_IP.test(e)),
-    cidrs: allow.filter((e) => CIDR_OR_IP.test(e)),
-  };
+  const domains = allow.filter((e) => !CIDR_OR_IP.test(e));
+  const cidrs = allow.filter((e) => CIDR_OR_IP.test(e));
+  // With a domain allowed, E2B also allows its DNS servers (8.8.8.8 by default).
+  if (domains.length > 0)
+    for (const dns of info.network?.dnsServers ?? [DEFAULT_DNS])
+      if (!cidrs.includes(dns)) cidrs.push(dns);
+  return { policy: "allowlist", domains, cidrs };
 }

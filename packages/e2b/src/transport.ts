@@ -10,6 +10,7 @@ export interface E2bNetwork {
   allowInternetAccess?: boolean;
   allowOut?: string[];
   denyOut?: string[];
+  dnsServers?: string[];
 }
 
 export interface E2bCreateOptions {
@@ -29,7 +30,7 @@ export interface E2bSandboxInfo {
   memoryMB: number;
   /** E2B reports `allowInternetAccess` only when it was set. */
   allowInternetAccess?: boolean;
-  network?: { allowOut?: string[]; denyOut?: string[] };
+  network?: { allowOut?: string[]; denyOut?: string[]; dnsServers?: string[] };
 }
 
 export interface E2bSpawnOptions {

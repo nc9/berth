@@ -44,11 +44,13 @@ export const E2B_INFO = {
 export type E2bProvider = Provider<typeof E2B_INFO>;
 
 export interface E2bOptions {
-  /** From the consumer; never read from the environment, never logged. */
+  /** From the consumer; never read from the environment (E2B_* variables are ignored), never logged. */
   apiKey: string;
   /** Override E2B's domain (self-hosted). */
   domain?: string;
   apiUrl?: string;
+  /** Required with a custom `domain`; defaults to E2B's own otherwise. */
+  sandboxUrl?: string;
   /** Test seam. Defaults to the official `e2b` SDK. */
   transport?: E2bTransport;
 }
@@ -86,6 +88,9 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
       apiKey,
       ...(options.domain !== undefined && { domain: options.domain }),
       ...(options.apiUrl !== undefined && { apiUrl: options.apiUrl }),
+      ...(options.sandboxUrl !== undefined && {
+        sandboxUrl: options.sandboxUrl,
+      }),
     });
 
   /**
@@ -276,8 +281,10 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
     try {
       return await call("read", () => transport.readFile(id, path));
     } catch (err) {
-      if (err instanceof NotFoundError) return undefined;
-      throw err;
+      if (!(err instanceof NotFoundError)) throw err;
+      // Missing file, or missing sandbox? getInfo throws NotFoundError for the latter.
+      await call("read", () => transport.getInfo(id));
+      return undefined;
     }
   }
 

@@ -12,6 +12,33 @@ export interface SdkTransportOptions {
   apiKey: string;
   domain?: string;
   apiUrl?: string;
+  sandboxUrl?: string;
+}
+
+export const DEFAULT_DOMAIN = "e2b.app";
+
+/**
+ * Connection options that never fall back to E2B_* environment variables:
+ * the e2b package reads E2B_API_URL, E2B_DOMAIN, E2B_SANDBOX_URL and
+ * E2B_DEBUG from process.env for anything left unset, which could send the
+ * API key to a host the consumer did not choose.
+ */
+export function connectionOptions(o: SdkTransportOptions) {
+  const domain = o.domain ?? DEFAULT_DOMAIN;
+  const sandboxUrl =
+    o.sandboxUrl ??
+    (o.domain === undefined ? `https://sandbox.${DEFAULT_DOMAIN}` : undefined);
+  if (sandboxUrl === undefined)
+    throw new UnsupportedError(
+      "e2b: a custom domain needs an explicit sandboxUrl (the environment is never read)",
+    );
+  return {
+    apiKey: o.apiKey,
+    domain,
+    apiUrl: o.apiUrl ?? `https://api.${domain}`,
+    sandboxUrl,
+    debug: false,
+  };
 }
 
 const toInfo = (i: SandboxInfo): E2bSandboxInfo => ({
@@ -27,18 +54,18 @@ const toInfo = (i: SandboxInfo): E2bSandboxInfo => ({
     network: {
       ...(i.network.allowOut && { allowOut: i.network.allowOut }),
       ...(i.network.denyOut && { denyOut: i.network.denyOut }),
+      ...(i.network.dnsServers && { dnsServers: i.network.dnsServers }),
     },
   }),
 });
 
 /** Maps SDK errors to berth errors by name (no instanceof across versions). */
-function mapError(err: unknown, secret: string): never {
+export function mapError(err: unknown, secret: string): never {
   if (err instanceof BerthError) throw err;
   const name = err instanceof Error ? err.name : "";
   const raw = err instanceof Error ? err.message : String(err);
   const message = raw.split(secret).join("[redacted]");
-  if (/NotFound/.test(name) || /not found/i.test(raw))
-    throw new NotFoundError(`e2b: ${message}`);
+  if (/NotFound/.test(name)) throw new NotFoundError(`e2b: ${message}`);
   if (name === "AuthenticationError")
     throw new BerthError("e2b: authentication failed (check the API key)");
   if (name === "RateLimitError")
@@ -50,10 +77,17 @@ function mapError(err: unknown, secret: string): never {
 
 /** The default transport, backed by the official `e2b` package. */
 export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
-  const conn = {
-    apiKey: o.apiKey,
-    ...(o.domain !== undefined && { domain: o.domain }),
-    ...(o.apiUrl !== undefined && { apiUrl: o.apiUrl }),
+  const conn = connectionOptions(o);
+  // Connects without changing the expiry (connect resets it to the timeout
+  // it is given) and refuses a paused sandbox instead of resuming it.
+  const attach = async (id: string): Promise<Sandbox> => {
+    const info = await Sandbox.getFullInfo(id, conn);
+    if (info.state !== "running")
+      throw new BerthError(
+        `e2b: sandbox ${id} is ${info.state}; resume it first`,
+      );
+    const left = info.endAt.getTime() - Date.now();
+    return Sandbox.connect(id, { ...conn, timeoutMs: Math.max(left, 1000) });
   };
   const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
@@ -125,7 +159,7 @@ export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
 
     spawn: (id, s) =>
       wrap(async () => {
-        const sbx = await Sandbox.connect(id, conn);
+        const sbx = await attach(id);
         await sbx.commands.run(buildLauncher(s), {
           ...(s.envs && { envs: s.envs }),
           timeoutMs: 30_000,
@@ -134,13 +168,13 @@ export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
 
     readFile: (id, path) =>
       wrap(async () => {
-        const sbx = await Sandbox.connect(id, conn);
+        const sbx = await attach(id);
         return sbx.files.read(path, { format: "bytes" });
       }),
 
     writeFile: (id, path, data) =>
       wrap(async () => {
-        const sbx = await Sandbox.connect(id, conn);
+        const sbx = await attach(id);
         const buf = data.buffer.slice(
           data.byteOffset,
           data.byteOffset + data.byteLength,

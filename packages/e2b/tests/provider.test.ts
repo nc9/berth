@@ -16,9 +16,11 @@ import {
   createE2bProvider,
   E2B_INFO,
   mapEgress,
+  readEgress,
   redact,
   shellQuote,
 } from "../src/index.ts";
+import { connectionOptions, mapError } from "../src/sdk-transport.ts";
 import { createMockE2b } from "./mock-transport.ts";
 
 const spec = (over: Partial<SandboxSpec> = {}): SandboxSpec => ({
@@ -134,12 +136,51 @@ describe("create", () => {
     const egresses: SandboxSpec["egress"][] = [
       { policy: "open" },
       { policy: "none" },
-      { policy: "allowlist", domains: ["a.com"], cidrs: ["10.0.0.0/8"] },
+      { policy: "allowlist", domains: [], cidrs: ["10.0.0.0/8"] },
     ];
     for (const egress of egresses) {
       const { id } = await p.create(spec({ egress }));
       expect((await p.describe(id)).egress).toEqual(egress);
     }
+  });
+
+  test("a domain allowlist reports the DNS servers E2B also allows", () => {
+    const base = {
+      sandboxId: "s",
+      metadata: {},
+      state: "running",
+      cpuCount: 1,
+      memoryMB: 1,
+    } as const;
+    const net = { allowOut: ["a.com"], denyOut: [ALL_TRAFFIC] };
+    expect(readEgress({ ...base, network: net })).toEqual({
+      policy: "allowlist",
+      domains: ["a.com"],
+      cidrs: ["8.8.8.8"],
+    });
+    expect(
+      readEgress({ ...base, network: { ...net, dnsServers: ["1.1.1.1"] } }),
+    ).toEqual({ policy: "allowlist", domains: ["a.com"], cidrs: ["1.1.1.1"] });
+  });
+
+  test("allowInternetAccess false with allowOut is an allowlist, not none", () => {
+    const base = {
+      sandboxId: "s",
+      metadata: {},
+      state: "running",
+      cpuCount: 1,
+      memoryMB: 1,
+    } as const;
+    expect(
+      readEgress({
+        ...base,
+        allowInternetAccess: false,
+        network: { allowOut: ["10.0.0.0/8"] },
+      }),
+    ).toEqual({ policy: "allowlist", domains: [], cidrs: ["10.0.0.0/8"] });
+    expect(readEgress({ ...base, allowInternetAccess: false })).toEqual({
+      policy: "none",
+    });
   });
 });
 
@@ -176,6 +217,12 @@ describe("exec", () => {
     const p = createE2bProvider({ apiKey: "k", transport: createMockE2b() });
     const { id } = await p.create(spec());
     expect((await p.exec.status(id, "nope")).state).toBe("unknown");
+  });
+  test("status on a missing sandbox throws NotFoundError", async () => {
+    const p = createE2bProvider({ apiKey: "k", transport: createMockE2b() });
+    await expect(p.exec.status("sbx-gone", "nope")).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
   test("pause then resume round-trips state", async () => {
     const p = createE2bProvider({ apiKey: "k", transport: createMockE2b() });
@@ -257,5 +304,48 @@ describe("credentials", () => {
     const p = createE2bProvider({ apiKey: key, transport: t });
     const err = await p.describe("x").catch((e) => e);
     expect(String(err.message)).not.toContain(key);
+  });
+});
+
+describe("sdk transport", () => {
+  test("connection options ignore E2B_* environment variables", () => {
+    const keys = ["E2B_API_URL", "E2B_DOMAIN", "E2B_SANDBOX_URL", "E2B_DEBUG"];
+    const saved = keys.map((k) => process.env[k]);
+    for (const k of keys) process.env[k] = "https://attacker.example";
+    try {
+      expect(connectionOptions({ apiKey: "k" })).toEqual({
+        apiKey: "k",
+        domain: "e2b.app",
+        apiUrl: "https://api.e2b.app",
+        sandboxUrl: "https://sandbox.e2b.app",
+        debug: false,
+      });
+    } finally {
+      keys.forEach((k, i) =>
+        saved[i] === undefined
+          ? delete process.env[k]
+          : (process.env[k] = saved[i]),
+      );
+    }
+  });
+  test("a custom domain needs an explicit sandboxUrl", () => {
+    expect(() => connectionOptions({ apiKey: "k", domain: "x.test" })).toThrow(
+      UnsupportedError,
+    );
+    expect(
+      connectionOptions({
+        apiKey: "k",
+        domain: "x.test",
+        sandboxUrl: "https://s.x.test",
+      }).apiUrl,
+    ).toBe("https://api.x.test");
+  });
+  test("only error names map to NotFoundError, not message text", () => {
+    expect(() =>
+      mapError(new Error("sh: timeout: not found"), "k"),
+    ).not.toThrow(NotFoundError);
+    const e = new Error("x");
+    e.name = "SandboxNotFoundError";
+    expect(() => mapError(e, "k")).toThrow(NotFoundError);
   });
 });
