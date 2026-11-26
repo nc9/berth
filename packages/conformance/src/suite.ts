@@ -190,7 +190,7 @@ export function runConformance(
         );
         expect(Array.from(back)).toEqual(Array.from(data));
       },
-      !info.files,
+      info.files,
     );
 
     t(
