@@ -6,6 +6,9 @@ packages/berth/tests/native-providers.test.ts
 packages/berth/tests/native.test.ts
 packages/berth/tests/validate.test.ts
 packages/conformance/tests/fake.test.ts
+packages/e2b/tests/conformance.live.test.ts
+packages/e2b/tests/conformance.mock.test.ts
+packages/e2b/tests/provider.test.ts
 packages/modal/tests/catalog.test.ts
 packages/modal/tests/conformance.test.ts
 packages/modal/tests/provider.test.ts

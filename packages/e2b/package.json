@@ -1,0 +1,15 @@
+{
+  "name": "@nc9/berth-e2b",
+  "version": "0.0.0",
+  "description": "E2B adapter for the berth Provider contract.",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@nc9/berth-sdk": "workspace:*",
+    "e2b": "2.64.0"
+  },
+  "devDependencies": {
+    "@nc9/berth-conformance": "workspace:*"
+  }
+}
