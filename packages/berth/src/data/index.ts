@@ -1,4 +1,6 @@
 import type { Provider } from "../catalog/types.ts";
+import { aws } from "./aws.ts";
+import { azure } from "./azure.ts";
+import { gcp } from "./gcp.ts";
 
-/** Real provider data arrives in later issues. */
-export const providers: Provider[] = [];
+export const providers: Provider[] = [aws, azure, gcp];
