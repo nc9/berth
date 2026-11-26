@@ -39,6 +39,7 @@ export const E2B_INFO = {
   arch: ["x86_64"],
   pause: true,
   snapshot: false,
+  readback: { resources: "provider", egress: "provider" },
 } as const satisfies ProviderInfo;
 
 export type E2bProvider = Provider<typeof E2B_INFO>;
@@ -60,6 +61,9 @@ const paths = (execId: string) => ({
   logPath: `${EXEC_DIR}/${execId}.log`,
   exitPath: `${EXEC_DIR}/${execId}.exit`,
 });
+/** Largest chunk one logs() call returns; bounds consumer memory. */
+export const LOG_PAGE_BYTES = 64 * 1024;
+const MAX_EXIT_BYTES = 64;
 const EXEC_ID = /^[a-z0-9-]+$/;
 
 /** Index after the last complete UTF-8 sequence, so a page never splits a character. */
@@ -164,9 +168,22 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
           metadata: spec.labels,
           ...(spec.ttlSec !== undefined && { timeoutMs: spec.ttlSec * 1000 }),
           ...(r?.vcpu !== undefined && { cpuCount: r.vcpu }),
-          ...(network && { network }),
+          // Public sandbox URLs are off: ports need E2B auth, so ingress is closed.
+          network: { ...network, allowPublicTraffic: false },
         }),
       );
+      // Verify, never assume: a sandbox whose ports are public is destroyed.
+      try {
+        const got = await call("create", () => transport.getInfo(sandboxId));
+        if (got.network?.allowPublicTraffic !== false)
+          throw new ProviderError(
+            "e2b",
+            "sandbox ports are publicly reachable; sandbox destroyed",
+          );
+      } catch (err) {
+        await call("destroy", () => transport.kill(sandboxId)).catch(() => {});
+        throw err;
+      }
       return { id: sandboxId, providerId: E2B_INFO.id };
     },
 
@@ -232,7 +249,7 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
 
       async status(id: string, execId: string): Promise<ExecStatus> {
         const { logPath, exitPath } = paths(checkExecId(execId));
-        const exit = await readOptional(id, exitPath);
+        const exit = await readOptional(id, exitPath, MAX_EXIT_BYTES);
         if (exit) {
           const code = Number.parseInt(
             new TextDecoder().decode(exit).trim(),
@@ -243,18 +260,22 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
             : { state: "exited", exitCode: code };
         }
         // No exit file yet: running if the log exists, otherwise never started.
-        return (await readOptional(id, logPath))
+        return (await readOptional(id, logPath, 1))
           ? { state: "running" }
           : { state: "unknown" };
       },
 
       async logs(id: string, execId: string, offset: number) {
         const { logPath } = paths(checkExecId(execId));
-        const bytes = await call("logs", () => transport.readFile(id, logPath));
-        const start = Math.min(Math.max(0, offset), bytes.length);
-        const end = Math.max(start, completeUtf8End(bytes));
-        const data = new TextDecoder().decode(bytes.subarray(start, end));
-        return { data, nextOffset: end };
+        const start = Number.isFinite(offset)
+          ? Math.max(0, Math.trunc(offset))
+          : 0;
+        const bytes = await call("logs", () =>
+          transport.readRange(id, logPath, start, LOG_PAGE_BYTES),
+        );
+        const used = completeUtf8End(bytes);
+        const data = new TextDecoder().decode(bytes.subarray(0, used));
+        return { data, nextOffset: start + used };
       },
     },
 
@@ -277,9 +298,10 @@ export function createE2bProvider(options: E2bOptions): E2bProvider {
   async function readOptional(
     id: string,
     path: string,
+    limit: number,
   ): Promise<Uint8Array | undefined> {
     try {
-      return await call("read", () => transport.readFile(id, path));
+      return await call("read", () => transport.readRange(id, path, 0, limit));
     } catch (err) {
       if (!(err instanceof NotFoundError)) throw err;
       // Missing file, or missing sandbox? getInfo throws NotFoundError for the latter.

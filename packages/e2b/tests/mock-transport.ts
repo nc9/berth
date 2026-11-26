@@ -16,6 +16,8 @@ export interface MockE2b extends E2bTransport {
   readonly created: E2bCreateOptions[];
   /** Every spawn request the adapter sent. */
   readonly spawned: E2bSpawnOptions[];
+  /** Every bounded read the adapter made. */
+  readonly reads: { path: string; offset: number; limit: number }[];
   readonly boxes: Map<string, Box>;
 }
 
@@ -26,6 +28,7 @@ export function createMockE2b(opts: { failWith?: Error } = {}): MockE2b {
   const boxes = new Map<string, Box>();
   const created: E2bCreateOptions[] = [];
   const spawned: E2bSpawnOptions[] = [];
+  const reads: { path: string; offset: number; limit: number }[] = [];
   let seq = 0;
   const guard = () => {
     if (opts.failWith) throw opts.failWith;
@@ -39,6 +42,7 @@ export function createMockE2b(opts: { failWith?: Error } = {}): MockE2b {
   return {
     created,
     spawned,
+    reads,
     boxes,
     async create(o) {
       guard();
@@ -53,10 +57,13 @@ export function createMockE2b(opts: { failWith?: Error } = {}): MockE2b {
         ...(o.network?.allowInternetAccess !== undefined && {
           allowInternetAccess: o.network.allowInternetAccess,
         }),
-        ...((o.network?.allowOut || o.network?.denyOut) && {
+        ...(o.network && {
           network: {
             ...(o.network.allowOut && { allowOut: o.network.allowOut }),
             ...(o.network.denyOut && { denyOut: o.network.denyOut }),
+            ...(o.network.allowPublicTraffic !== undefined && {
+              allowPublicTraffic: o.network.allowPublicTraffic,
+            }),
           },
         }),
       };
@@ -102,6 +109,13 @@ export function createMockE2b(opts: { failWith?: Error } = {}): MockE2b {
       const data = get(id).files.get(path);
       if (!data) throw new NotFoundError(`file ${path} not found`);
       return data;
+    },
+    async readRange(id, path, offset, limit) {
+      guard();
+      reads.push({ path, offset, limit });
+      const data = get(id).files.get(path);
+      if (!data) throw new NotFoundError(`file ${path} not found`);
+      return data.subarray(offset, offset + limit);
     },
     async writeFile(id, path, data) {
       guard();

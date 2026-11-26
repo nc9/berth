@@ -11,6 +11,8 @@ export interface E2bNetwork {
   allowOut?: string[];
   denyOut?: string[];
   dnsServers?: string[];
+  /** Always false from this adapter: sandbox ports require E2B auth. */
+  allowPublicTraffic?: boolean;
 }
 
 export interface E2bCreateOptions {
@@ -30,7 +32,12 @@ export interface E2bSandboxInfo {
   memoryMB: number;
   /** E2B reports `allowInternetAccess` only when it was set. */
   allowInternetAccess?: boolean;
-  network?: { allowOut?: string[]; denyOut?: string[]; dnsServers?: string[] };
+  network?: {
+    allowOut?: string[];
+    denyOut?: string[];
+    dnsServers?: string[];
+    allowPublicTraffic?: boolean;
+  };
 }
 
 export interface E2bSpawnOptions {
@@ -56,5 +63,16 @@ export interface E2bTransport {
   /** Starts a detached process and returns without waiting for it. */
   spawn(sandboxId: string, options: E2bSpawnOptions): Promise<void>;
   readFile(sandboxId: string, path: string): Promise<Uint8Array>;
+  /**
+   * At most `limit` bytes of a file starting at `offset`, read inside the
+   * sandbox so the transfer is bounded. Throws NotFoundError when the file
+   * does not exist.
+   */
+  readRange(
+    sandboxId: string,
+    path: string,
+    offset: number,
+    limit: number,
+  ): Promise<Uint8Array>;
   writeFile(sandboxId: string, path: string, data: Uint8Array): Promise<void>;
 }

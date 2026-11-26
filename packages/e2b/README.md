@@ -17,9 +17,10 @@ const { id } = await e2b.create({
 
 - **create:** from a `template` only. Labels are E2B `metadata`. `ttlSec` is the sandbox timeout. `resources.vcpu` maps to `cpuCount`; memory, disk and GPU are fixed by the template, so asking for them throws `UnsupportedError`, as do image/snapshot sources and `region`.
 - **describe / list / destroyByLabels:** from E2B's `SandboxInfo`. `memoryMiB` is E2B's `memoryMB`. `destroyByLabels({})` is refused.
-- **exec:** detached. The command is started with `nohup` through a launcher script; output goes to `/tmp/.berth/exec/<id>.log`, and the exit code to `<id>.exit` when it finishes. `logs` reads the log by byte offset. Env values travel in the request body, not argv.
+- **exec:** detached. The command is started with `nohup` through a launcher script; output goes to `/tmp/.berth/exec/<id>.log`, and the exit code to `<id>.exit` when it finishes. `logs` reads the log by byte offset in pages of at most 64 KiB, read inside the sandbox (`tail | head | base64`), so a huge log never lands in consumer memory; `status` reads at most 64 bytes of the exit file. Env values travel in the request body, not argv.
+- **ingress:** `create` always sets `allowPublicTraffic: false` (E2B's default is public sandbox URLs, which would bypass egress `none`), then reads it back and destroys the sandbox if it is not false. `info.network.ingress` stays false.
 - **files:** E2B filesystem read/write.
-- **destroy:** idempotent. **pause / resume:** `info.pause` is true. Resume uses `Sandbox.connect`, which also resumes a paused sandbox on any `exec` or `files` call.
+- **destroy:** idempotent. **pause / resume:** `info.pause` is true. Resume uses `Sandbox.connect` with the sandbox's own lifetime (`endAt - startedAt`) so the expiry is not reset to E2B's 300 s default (whether E2B keeps `endAt` stable across pause is unverified). `exec` and `files` calls refuse a paused sandbox: resume it first.
 - **egress:** `open` (no restriction), `none` (`allowInternetAccess: false`), `allowlist` (`allowOut` entries plus `denyOut: 0.0.0.0/0`; allow beats deny). Domains match only HTTP Host and TLS SNI. `deny-all-except-proxy` and `proxy-domain-filtered` throw `UnsupportedError` before any request. E2B's `denyOut` takes IPs and CIDRs only, so a domain deny list is not expressible.
 
 ## Unverified

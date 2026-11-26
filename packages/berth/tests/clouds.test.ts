@@ -9,13 +9,11 @@ describe("cloud catalog data", () => {
   test("validates with zero errors", () => {
     expect(validateProviders(providers)).toEqual([]);
   });
-  test("one provider per cloud, every type has a service tag", () => {
-    expect(catalog.getProviders().map((p) => p.id)).toEqual([
-      "aws",
-      "azure",
-      "gcp",
-    ]);
-    for (const t of catalog.getTypes()) expect(t.service).toBeTruthy();
+  test("every cloud type has a service tag", () => {
+    for (const t of catalog
+      .getTypes("aws")
+      .concat(catalog.getTypes("azure"), catalog.getTypes("gcp")))
+      expect(t.service).toBeTruthy();
   });
   test("each documented service is present", () => {
     const services = (p: string) => [
@@ -47,7 +45,9 @@ describe("cloud catalog data", () => {
     );
   });
   test("allowlist egress is only Azure ACA Sandboxes", () => {
-    const found = catalog.find({ egress: "allowlist" });
+    const found = catalog
+      .find({ egress: "allowlist" })
+      .filter((t) => ["aws", "azure", "gcp"].includes(t.provider));
     expect(found.length).toBeGreaterThan(0);
     for (const t of found) {
       expect(t.provider).toBe("azure");

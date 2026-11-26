@@ -55,6 +55,9 @@ const toInfo = (i: SandboxInfo): E2bSandboxInfo => ({
       ...(i.network.allowOut && { allowOut: i.network.allowOut }),
       ...(i.network.denyOut && { denyOut: i.network.denyOut }),
       ...(i.network.dnsServers && { dnsServers: i.network.dnsServers }),
+      ...(i.network.allowPublicTraffic != null && {
+        allowPublicTraffic: i.network.allowPublicTraffic,
+      }),
     },
   }),
 });
@@ -74,6 +77,8 @@ export function mapError(err: unknown, secret: string): never {
     throw new UnsupportedError(`e2b: ${message}`);
   throw new Error(message);
 }
+
+const shq = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
 
 /** The default transport, backed by the official `e2b` package. */
 export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
@@ -108,10 +113,13 @@ export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
           ...(c.network?.allowInternetAccess !== undefined && {
             allowInternetAccess: c.network.allowInternetAccess,
           }),
-          ...((c.network?.allowOut || c.network?.denyOut) && {
+          ...(c.network && {
             network: {
               ...(c.network.allowOut && { allowOut: c.network.allowOut }),
               ...(c.network.denyOut && { denyOut: c.network.denyOut }),
+              ...(c.network.allowPublicTraffic !== undefined && {
+                allowPublicTraffic: c.network.allowPublicTraffic,
+              }),
             },
           }),
         });
@@ -151,10 +159,17 @@ export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
         await Sandbox.pause(id, conn);
       }),
 
-    // Connecting to a paused sandbox resumes it.
+    // Connecting to a paused sandbox resumes it. connect resets the expiry to
+    // the timeout it is given (300 s by default), so pass the sandbox's own
+    // lifetime (endAt - startedAt) to keep ttlSec across pause and resume.
     resume: (id) =>
       wrap(async () => {
-        await Sandbox.connect(id, conn);
+        const info = await Sandbox.getFullInfo(id, conn);
+        const life = info.endAt.getTime() - info.startedAt.getTime();
+        await Sandbox.connect(id, {
+          ...conn,
+          ...(life >= 1000 && { timeoutMs: life }),
+        });
       }),
 
     spawn: (id, s) =>
@@ -170,6 +185,27 @@ export function createSdkTransport(o: SdkTransportOptions): E2bTransport {
       wrap(async () => {
         const sbx = await attach(id);
         return sbx.files.read(path, { format: "bytes" });
+      }),
+
+    readRange: (id, path, offset, limit) =>
+      wrap(async () => {
+        const sbx = await attach(id);
+        const script =
+          '[ -f "$1" ] || exit 44; tail -c +"$(($2 + 1))" "$1" | head -c "$3" | base64 -w0';
+        try {
+          const r = await sbx.commands.run(
+            `sh -c ${shq(script)} sh ${shq(path)} ${Math.trunc(offset)} ${Math.trunc(limit)}`,
+            { timeoutMs: 30_000 },
+          );
+          return Uint8Array.from(Buffer.from(r.stdout, "base64"));
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            (err as { exitCode?: number }).exitCode === 44
+          )
+            throw new NotFoundError(`e2b: file ${path} not found`);
+          throw err;
+        }
       }),
 
     writeFile: (id, path, data) =>

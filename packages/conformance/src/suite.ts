@@ -126,9 +126,15 @@ export function runConformance(
         const d = await provider.describe(handle.id);
         expect(d.id).toBe(handle.id);
         if (info.labels) expect(d.labels).toMatchObject(labels);
-        for (const [k, v] of Object.entries(resources)) {
-          expect(d.resources[k as keyof typeof resources]).toBe(v);
+        if (info.readback.resources === "provider") {
+          for (const [k, v] of Object.entries(resources)) {
+            expect(d.resources[k as keyof typeof resources]).toBe(v);
+          }
+        } else {
+          // No provider readback: describe must not present an echo as fact.
+          expect(d.resources).toEqual({});
         }
+        if (info.readback.egress === "none") expect(d.egress).toBeUndefined();
       },
     );
 

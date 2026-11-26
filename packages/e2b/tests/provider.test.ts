@@ -19,6 +19,7 @@ import {
   readEgress,
   redact,
   shellQuote,
+  LOG_PAGE_BYTES,
 } from "../src/index.ts";
 import { connectionOptions, mapError } from "../src/sdk-transport.ts";
 import { createMockE2b } from "./mock-transport.ts";
@@ -109,9 +110,32 @@ describe("create", () => {
         metadata: { team: "ci" },
         timeoutMs: 60_000,
         cpuCount: 4,
-        network: { allowOut: ["a.com"], denyOut: [ALL_TRAFFIC] },
+        network: {
+          allowOut: ["a.com"],
+          denyOut: [ALL_TRAFFIC],
+          allowPublicTraffic: false,
+        },
       },
     ]);
+  });
+
+  test("public sandbox URLs are always disabled", async () => {
+    const t = createMockE2b();
+    const p = createE2bProvider({ apiKey: "k", transport: t });
+    await p.create(spec({ egress: { policy: "open" } }));
+    await p.create(spec({ egress: { policy: "none" } }));
+    for (const c of t.created)
+      expect(c.network?.allowPublicTraffic).toBe(false);
+  });
+
+  test("a sandbox that comes back public is destroyed and refused", async () => {
+    const t = createMockE2b();
+    const create = t.create.bind(t);
+    t.create = (o) =>
+      create({ ...o, network: { ...o.network, allowPublicTraffic: true } });
+    const p = createE2bProvider({ apiKey: "k", transport: t });
+    await expect(p.create(spec())).rejects.toThrow(/publicly reachable/);
+    expect(t.boxes.size).toBe(0);
   });
 
   test("refusals happen before any request", async () => {
@@ -212,6 +236,22 @@ describe("exec", () => {
     await expect(p.exec.status(id, "../etc/passwd")).rejects.toBeInstanceOf(
       NotFoundError,
     );
+  });
+  test("logs and status read bounded ranges, never whole files", async () => {
+    const t = createMockE2b();
+    const p = createE2bProvider({ apiKey: "k", transport: t });
+    const { id } = await p.create(spec());
+    const { execId } = await p.exec.start(id, { command: ["echo", "hello"] });
+    const box = t.boxes.get(id)!;
+    const big = new Uint8Array(LOG_PAGE_BYTES * 3).fill(97);
+    box.files.set(`/tmp/.berth/exec/${execId}.log`, big);
+    const page = await p.exec.logs(id, execId, 10);
+    expect(page.data.length).toBe(LOG_PAGE_BYTES);
+    expect(page.nextOffset).toBe(10 + LOG_PAGE_BYTES);
+    await p.exec.status(id, execId);
+    expect(t.reads.length).toBe(2);
+    for (const r of t.reads)
+      expect(r.limit).toBeLessThanOrEqual(LOG_PAGE_BYTES);
   });
   test("unknown exec reports unknown", async () => {
     const p = createE2bProvider({ apiKey: "k", transport: createMockE2b() });

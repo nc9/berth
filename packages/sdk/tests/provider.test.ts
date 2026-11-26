@@ -15,6 +15,7 @@ const baseInfo = {
   listByLabel: true,
   os: ["linux"],
   arch: ["x86_64"],
+  readback: { resources: "provider", egress: "provider" },
 } as const;
 
 const common = {
@@ -96,4 +97,30 @@ test("pause is rejected when the flag is false", () => {
 test("generic ProviderInfo is assignable", () => {
   const f = (_p: Provider<ProviderInfo>) => {};
   expect(f).toBeDefined();
+});
+
+test("readback none: describe may omit egress and carry a requested echo", async () => {
+  const info = {
+    ...baseInfo,
+    pause: false,
+    snapshot: false,
+    readback: { resources: "none", egress: "none" },
+  } as const;
+  const p: Provider<typeof info> = {
+    ...common,
+    info,
+    async describe(id: string) {
+      return {
+        id,
+        labels: {},
+        resources: {},
+        requested: { egress: { policy: "none" } },
+        state: "running",
+      };
+    },
+  };
+  const d = await p.describe("1");
+  expect(p.info.readback.egress).toBe("none");
+  expect(d.egress).toBeUndefined();
+  expect(d.requested?.egress?.policy).toBe("none");
 });

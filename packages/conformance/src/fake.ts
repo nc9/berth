@@ -28,6 +28,7 @@ export const FAKE_INFO: ProviderInfo = {
   arch: ["x86_64"],
   pause: false,
   snapshot: false,
+  readback: { resources: "provider", egress: "provider" },
 };
 
 export interface FakeOptions {
