@@ -24,3 +24,11 @@ export {
   providerSchema,
 } from "./catalog/schema.ts";
 export { providers as builtInProviders } from "./data/index.ts";
+export { validateLogoManifest } from "./catalog/logo-manifest.ts";
+export type {
+  LogoManifest,
+  ManifestEntry,
+  ManifestFile,
+} from "./catalog/logo-manifest.ts";
+export { sanitizeSvg } from "./catalog/svg-sanitize.ts";
+export type { SanitizeResult } from "./catalog/svg-sanitize.ts";

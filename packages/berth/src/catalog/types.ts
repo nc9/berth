@@ -29,10 +29,21 @@ export interface Region {
   priceMultiplier?: number;
 }
 
+/** Repo-relative paths of committed brand images, by kind and colour mode. */
+export interface LogoFiles {
+  icon?: LogoModes;
+  logo?: LogoModes;
+}
+export interface LogoModes {
+  light?: string;
+  dark?: string;
+}
+
 export interface Logo {
   simpleIcons?: string;
   svg?: string;
   brandUrl?: string;
+  files?: LogoFiles;
 }
 
 export interface Capabilities {

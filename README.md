@@ -82,6 +82,14 @@ const mine = createCatalog(mergeCatalog(builtInProviders, remote));
 
 `bun run catalog:check` validates the built JSON against the schema and the validators and exits non-zero on any error.
 
+## Logos
+
+Each provider's `logo.files` points at committed brand images (`packages/berth/assets/logos/<id>/<icon|logo>-<light|dark>.<svg|png>`) fetched from context.dev by `bun scripts/fetch-logos.ts` (manual, needs `CONTEXT_DEV_API_KEY`, not run in CI). SVGs are sanitized before commit (`sanitizeSvg`); `manifest.json` records the domain, retrieval time and source URL of each file, or `missing: true` with a reason (aws and daytona: context.dev offers no light/dark images).
+
+Logos are trademarks of their owners, included for identification only.
+
+**Storage: plain git, not LFS.** 23 images (14 SVG, 9 PNG) plus the manifest total about 260 KB, the largest file under 512 KB. SVG is text and diffs well. LFS would need `lfs: true` in CI checkout and would break `bun install` from a git dependency and npm packaging for a few hundred KB.
+
 ## Data rules
 
 - Every price rate carries `verifiedAt`, a `sourceUrl` (https) and, where the vendor states one, the raw value and unit (`raw`) so conversions can be audited.

@@ -22,6 +22,8 @@ import type {
   ContainerType,
   GpuSpec,
   Logo,
+  LogoFiles,
+  LogoModes,
   PriceBook,
   Provider,
   ProviderMeta,
@@ -143,6 +145,16 @@ const region = shape<Region>({
   priceMultiplier: opt(posNum),
 });
 
+const logoPath: Json = {
+  type: "string",
+  pattern:
+    "^packages/berth/assets/logos/[a-z0-9-]+/(icon|logo)-(light|dark)\\.(svg|png)$",
+};
+const logoModes = shape<LogoModes>({
+  light: opt(logoPath),
+  dark: opt(logoPath),
+});
+
 const providerMeta = shape<ProviderMeta>({
   id: req(kebab),
   name: req(str),
@@ -155,6 +167,12 @@ const providerMeta = shape<ProviderMeta>({
       simpleIcons: opt(str),
       svg: opt(str),
       brandUrl: opt(https),
+      files: opt(
+        shape<LogoFiles>({
+          icon: opt(logoModes),
+          logo: opt(logoModes),
+        }),
+      ),
     }),
   ),
   envVars: req(list(str)),
