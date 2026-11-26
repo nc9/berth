@@ -5,6 +5,7 @@ packages/berth/tests/merge.test.ts
 packages/berth/tests/native-providers.test.ts
 packages/berth/tests/validate.test.ts
 packages/conformance/tests/fake.test.ts
+packages/modal/tests/catalog.test.ts
 packages/modal/tests/conformance.test.ts
 packages/modal/tests/provider.test.ts
 packages/sdk/tests/can-apply.test.ts

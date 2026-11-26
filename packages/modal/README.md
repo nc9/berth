@@ -26,3 +26,11 @@ Credentials come from the consumer at construction. The adapter never reads them
 ## Tests
 
 The conformance suite runs in CI against a fake Modal client. To run it live, set `BERTH_MODAL_TOKEN_ID` and `BERTH_MODAL_TOKEN_SECRET` and run `bun test packages/modal/tests/conformance.test.ts`; without them the live suite is skipped.
+
+## Notes
+
+- Without `ttlSec` no timeout is sent, so Modal's default sandbox lifetime (5 minutes) applies. Pass `ttlSec` for anything longer.
+- `cpu` and `memoryMiB` are Modal reservations: Modal documents bursting above them. The hard limits are `cpuLimit` / `memoryLimitMiB`, which this adapter does not set. `describe` reports the reservation.
+- `arch` is empty: Modal does not document it.
+- Exec ids are random and bound to their sandbox; exec records live in memory only, are dropped on `destroy`, and output is capped at 16 MiB per exec (later output is dropped). Ids do not survive a restart.
+- Missing sandboxes: the SDK's `fromId` makes no RPC, so not-found surfaces from `poll`/`terminate` as a gRPC NOT_FOUND and is mapped to `NotFoundError` (`destroy` ignores it).

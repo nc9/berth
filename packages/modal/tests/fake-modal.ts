@@ -1,4 +1,3 @@
-import { NotFoundError as ModalNotFoundError } from "modal";
 import type {
   ModalClientLike,
   ModalCreateParams,
@@ -61,14 +60,21 @@ export class FakeSandbox implements ModalSandboxLike {
   constructor(
     readonly sandboxId: string,
     readonly params: ModalCreateParams,
+    readonly unknown = false,
   ) {}
+  private check() {
+    // Raw gRPC NOT_FOUND (code 5), as the real SDK lets through.
+    if (this.unknown) throw Object.assign(new Error("not found"), { code: 5 });
+  }
   async getTags() {
     return { ...this.params.tags };
   }
   async poll() {
+    this.check();
     return this.terminated ? 0 : null;
   }
   async terminate() {
+    this.check();
     this.terminated = true;
   }
   async exec(command: string[], params?: ModalExecParams) {
@@ -120,9 +126,8 @@ export class FakeModal implements ModalClientLike {
     },
     fromId: async (id: string) => {
       this.guard();
-      const sb = this.sandboxList.get(id);
-      if (!sb) throw new ModalNotFoundError(`no sandbox ${id}`);
-      return sb;
+      // Like the real SDK: a local handle, no RPC, never throws for unknown ids.
+      return this.sandboxList.get(id) ?? new FakeSandbox(id, {}, true);
     },
     list: (params?: { tags?: Record<string, string> }) => {
       this.guard();

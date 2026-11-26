@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { ModalClient, NotFoundError as ModalNotFoundError } from "modal";
 import {
   BerthError,
@@ -29,9 +30,9 @@ import type {
 export const MODAL_PROVIDER_ID = "modal";
 
 /**
- * What this adapter can do. Not yet cross-checked against the catalog: the
- * catalog has no Modal record at the time of writing. Fields Modal does not
- * document are left out rather than guessed (no domainMax / cidrMax).
+ * What this adapter can do, cross-checked against the catalog record in
+ * tests/catalog.test.ts. Fields Modal does not document are left out rather
+ * than guessed (no domainMax / cidrMax, arch is empty).
  */
 export const MODAL_INFO = {
   id: MODAL_PROVIDER_ID,
@@ -50,7 +51,7 @@ export const MODAL_INFO = {
   list: true,
   listByLabel: true,
   os: ["linux"],
-  arch: ["x86_64"],
+  arch: [],
   pause: false,
   snapshot: false,
 } as const satisfies ProviderInfo;
@@ -88,11 +89,26 @@ export interface ModalProviderOptions {
   client?: ModalClientLike;
 }
 
+/** Output kept per exec; anything past this is dropped (not rotated, so offsets stay valid). */
+const MAX_EXEC_BUFFER = 16 * 1024 * 1024;
+
 interface ExecRecord {
+  sandboxId: string;
+  truncated: boolean;
   buffer: string;
   exitCode?: number;
   done: boolean;
   failed: boolean;
+}
+
+/**
+ * The SDK's fromId makes no RPC, so a missing sandbox surfaces from
+ * poll/terminate as a raw gRPC NOT_FOUND (code 5) or as modal's NotFoundError.
+ */
+function isNotFound(e: unknown): boolean {
+  if (e instanceof ModalNotFoundError) return true;
+  const code = (e as { code?: unknown } | null)?.code;
+  return code === 5 || code === "NOT_FOUND";
 }
 
 const noopLogger = {
@@ -161,18 +177,21 @@ export function createModalProvider(
     try {
       sb = await getClient().sandboxes.fromId(id);
     } catch (e) {
-      if (e instanceof ModalNotFoundError) {
-        throw new NotFoundError(`sandbox ${id} not found`);
-      }
+      if (isNotFound(e)) throw new NotFoundError(`sandbox ${id} not found`);
       throw wrap("lookup", e);
     }
-    const exit = await call("poll", () => sb.poll());
+    let exit: number | null;
+    try {
+      exit = await sb.poll();
+    } catch (e) {
+      if (isNotFound(e)) throw new NotFoundError(`sandbox ${id} not found`);
+      throw wrap("poll", e);
+    }
     if (exit !== null) throw new NotFoundError(`sandbox ${id} has terminated`);
     return sb;
   };
 
   const execs = new Map<string, ExecRecord>();
-  let execCounter = 0;
 
   const splitTags = (tags: Record<string, string>) => {
     const labels: Labels = {};
@@ -290,15 +309,15 @@ export function createModalProvider(
       try {
         sb = await getClient().sandboxes.fromId(id);
       } catch (e) {
-        if (e instanceof ModalNotFoundError) return;
+        if (isNotFound(e)) return;
         throw wrap("destroy", e);
       }
       try {
         await sb.terminate();
       } catch (e) {
-        if (e instanceof ModalNotFoundError) return;
-        throw wrap("destroy", e);
+        if (!isNotFound(e)) throw wrap("destroy", e);
       }
+      for (const [k, r] of execs) if (r.sandboxId === id) execs.delete(k);
     },
 
     async list(filter?: { labels?: Labels }): Promise<SandboxSummary[]> {
@@ -343,16 +362,22 @@ export function createModalProvider(
             }),
           }),
         );
-        const execId = `x${++execCounter}-${id}`;
-        const rec: ExecRecord = { buffer: "", done: false, failed: false };
+        const execId = `x-${randomUUID()}`;
+        const rec: ExecRecord = {
+          sandboxId: id,
+          truncated: false,
+          buffer: "",
+          done: false,
+          failed: false,
+        };
         execs.set(execId, rec);
         void pump(proc, rec);
         return { execId };
       },
 
-      async status(_id: string, execId: string): Promise<ExecStatus> {
+      async status(id: string, execId: string): Promise<ExecStatus> {
         const rec = execs.get(execId);
-        if (!rec) return { state: "unknown" };
+        if (!rec || rec.sandboxId !== id) return { state: "unknown" };
         if (!rec.done) return { state: "running" };
         if (rec.failed) return { state: "unknown" };
         return {
@@ -362,12 +387,13 @@ export function createModalProvider(
       },
 
       async logs(
-        _id: string,
+        id: string,
         execId: string,
         offset: number,
       ): Promise<ExecLogs> {
         const rec = execs.get(execId);
-        if (!rec) throw new NotFoundError(`exec ${execId} not found`);
+        if (!rec || rec.sandboxId !== id)
+          throw new NotFoundError(`exec ${execId} not found`);
         const data = rec.buffer.slice(offset);
         return { data, nextOffset: offset + data.length };
       },
@@ -430,7 +456,10 @@ async function pump(proc: ModalProcessLike, rec: ExecRecord): Promise<void> {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) return;
-      if (value) rec.buffer += value;
+      if (value && rec.buffer.length < MAX_EXEC_BUFFER) {
+        rec.buffer += value.slice(0, MAX_EXEC_BUFFER - rec.buffer.length);
+        if (rec.buffer.length >= MAX_EXEC_BUFFER) rec.truncated = true;
+      }
     }
   };
   try {
