@@ -5,11 +5,56 @@ import {
   ISOLATION_CLASSES,
   OS_VALUES,
 } from "./primitives.ts";
+import {
+  BILLING_VALUES,
+  CURRENCIES,
+  DOMAIN_MATCH_VALUES,
+  GRANULARITIES,
+  PRICING_SOURCES,
+  RATE_DIMENSIONS,
+  RATE_UNITS,
+  SIZING_MODES,
+  STATUS_VALUES,
+  TYPE_KINDS,
+} from "./types.ts";
+import type {
+  Capabilities,
+  ContainerType,
+  GpuSpec,
+  Logo,
+  PriceBook,
+  Provider,
+  ProviderMeta,
+  Rate,
+  Region,
+} from "./types.ts";
 
 /** Version of the served catalog document. Bump on breaking shape changes. */
 export const SCHEMA_VERSION = 1;
 
 type Json = Record<string, unknown>;
+
+// Single source of truth: every object schema below is declared through
+// `shape<T>()`, whose parameter is derived from the TypeScript type `T`. A
+// field added to, removed from, or made optional/required in `types.ts` stops
+// this file from compiling until the schema is updated. Enum values come from
+// the same const arrays that define the TS unions.
+type Field<R extends boolean> = { schema: Json; required: R };
+type Shape<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? Field<false> : Field<true>;
+};
+const req = (schema: Json): Field<true> => ({ schema, required: true });
+const opt = (schema: Json): Field<false> => ({ schema, required: false });
+
+function shape<T>(fields: Shape<T>): Json {
+  const entries = Object.entries(fields) as [string, Field<boolean>][];
+  return {
+    type: "object",
+    properties: Object.fromEntries(entries.map(([k, f]) => [k, f.schema])),
+    required: entries.filter(([, f]) => f.required).map(([k]) => k),
+    additionalProperties: false,
+  };
+}
 
 const str: Json = { type: "string" };
 const bool: Json = { type: "boolean" };
@@ -28,232 +73,189 @@ const en = (values: readonly string[]): Json => ({
   enum: [...values],
 });
 const ref = (name: string): Json => ({ $ref: `#/$defs/${name}` });
-const obj = (
-  properties: Record<string, Json>,
-  required: string[] = [],
-): Json => ({
-  type: "object",
-  properties,
-  required,
-  additionalProperties: false,
-});
 const numberOrRange = (item: Json): Json => ({
-  anyOf: [item, obj({ min: item, max: item }, ["min", "max"])],
+  anyOf: [
+    item,
+    shape<{ min: number; max: number }>({ min: req(item), max: req(item) }),
+  ],
 });
 
-const capabilities = obj({
-  createFrom: list(str),
-  snapshots: obj({ fs: bool, memory: bool, fork: bool }, [
-    "fs",
-    "memory",
-    "fork",
-  ]),
-  pause: obj({ supported: bool, keepsMemory: bool }, [
-    "supported",
-    "keepsMemory",
-  ]),
-  egress: obj(
-    {
-      policies: list(en(EGRESS_POLICIES)),
-      domainMatch: en(["sni", "dns", "sni+host"]),
-      domainMax: num,
-      cidrMax: num,
-      mutuallyExclusive: bool,
-      runtimeUpdate: bool,
-    },
-    ["policies"],
+type NonNull<T, K extends keyof T> = NonNullable<T[K]>;
+
+const capabilities = shape<Capabilities>({
+  createFrom: opt(list(str)),
+  snapshots: opt(
+    shape<NonNull<Capabilities, "snapshots">>({
+      fs: req(bool),
+      memory: req(bool),
+      fork: req(bool),
+    }),
   ),
-  maxLifetimeSec: num,
-  minBillingSec: num,
-  exec: obj({ detached: bool, streaming: bool, tty: bool }, [
-    "detached",
-    "streaming",
-    "tty",
-  ]),
-  files: obj({ upload: bool, download: bool, maxBytes: num }, [
-    "upload",
-    "download",
-  ]),
-  labels: bool,
-  list: bool,
-  ingress: bool,
-  discovery: obj(
-    {
-      types: bool,
-      regions: bool,
-      pricing: en(["api", "docs"]),
-    },
-    ["types", "regions", "pricing"],
+  pause: opt(
+    shape<NonNull<Capabilities, "pause">>({
+      supported: req(bool),
+      keepsMemory: req(bool),
+    }),
   ),
+  egress: opt(
+    shape<NonNull<Capabilities, "egress">>({
+      policies: req(list(en(EGRESS_POLICIES))),
+      domainMatch: opt(en(DOMAIN_MATCH_VALUES)),
+      domainMax: opt(num),
+      cidrMax: opt(num),
+      mutuallyExclusive: opt(bool),
+      runtimeUpdate: opt(bool),
+    }),
+  ),
+  maxLifetimeSec: opt(num),
+  minBillingSec: opt(num),
+  exec: opt(
+    shape<NonNull<Capabilities, "exec">>({
+      detached: req(bool),
+      streaming: req(bool),
+      tty: req(bool),
+    }),
+  ),
+  files: opt(
+    shape<NonNull<Capabilities, "files">>({
+      upload: req(bool),
+      download: req(bool),
+      maxBytes: opt(num),
+    }),
+  ),
+  labels: opt(bool),
+  list: opt(bool),
+  ingress: opt(bool),
+  discovery: opt(
+    shape<NonNull<Capabilities, "discovery">>({
+      types: req(bool),
+      regions: req(bool),
+      pricing: req(en(PRICING_SOURCES)),
+    }),
+  ),
+});
+
+const region = shape<Region>({
+  id: req(kebab),
+  name: req(str),
+  geo: req(str),
+  selectable: req(bool),
+  priceMultiplier: opt(posNum),
+});
+
+const providerMeta = shape<ProviderMeta>({
+  id: req(kebab),
+  name: req(str),
+  website: req(https),
+  docs: req(https),
+  pricingUrl: req(https),
+  description: req(str),
+  logo: req(
+    shape<Logo>({
+      simpleIcons: opt(str),
+      svg: opt(str),
+      brandUrl: opt(https),
+    }),
+  ),
+  envVars: req(list(str)),
+  isolation: req(list(en(ISOLATION_CLASSES))),
+  regions: req(list(region)),
+  sizingMode: req(en(SIZING_MODES)),
+  freeTier: req(str),
+  status: req(en(STATUS_VALUES)),
+  verifiedAt: req(date),
+  capabilities: opt(ref("Capabilities")),
+});
+
+const rate = shape<Rate>({
+  dimension: req(en(RATE_DIMENSIONS)),
+  unit: req(en(RATE_UNITS)),
+  usd: req({ type: "number", minimum: 0 }),
+  raw: opt(shape<NonNull<Rate, "raw">>({ value: req(num), unit: req(str) })),
+  unverified: opt(bool),
+  gpuType: opt(en(GPU_TYPES)),
+  regionMultiplier: opt({ type: "object", additionalProperties: posNum }),
+  verifiedAt: req(date),
+  sourceUrl: req(https),
+});
+
+const priceBook = shape<PriceBook>({
+  currency: req(en(CURRENCIES)),
+  billing: req(en(BILLING_VALUES)),
+  granularity: req(en(GRANULARITIES)),
+  minimums: opt(
+    shape<NonNull<PriceBook, "minimums">>({
+      vcpu: opt(num),
+      memoryMiB: opt(posInt),
+      billedMinutes: opt(num),
+    }),
+  ),
+  rates: req(list(ref("Rate"))),
+  monthlyFeeUsd: opt(num),
+  includedCreditUsd: opt(num),
+});
+
+const containerType = shape<ContainerType>({
+  id: req(kebab),
+  provider: req(kebab),
+  kind: req(en(TYPE_KINDS)),
+  service: opt(str),
+  status: opt(en(STATUS_VALUES)),
+  notes: opt(list(str)),
+  vcpu: req(numberOrRange(posNum)),
+  memoryMiB: req(numberOrRange(posInt)),
+  diskGiB: opt(numberOrRange(posNum)),
+  gpu: opt(
+    list(
+      shape<GpuSpec>({
+        type: req(en(GPU_TYPES)),
+        count: req(posInt),
+        vramGiB: opt(posNum),
+        preemptible: opt(bool),
+      }),
+    ),
+  ),
+  os: req(list(en(OS_VALUES))),
+  arch: req(list(en(ARCH_VALUES))),
+  isolation: req(en(ISOLATION_CLASSES)),
+  regions: req(list(str)),
+  limits: opt(
+    shape<NonNull<ContainerType, "limits">>({
+      maxLifetimeSec: opt(num),
+      maxConcurrent: opt(num),
+      planGate: opt(str),
+    }),
+  ),
+  price: opt(ref("PriceBook")),
+  capabilities: opt(ref("Capabilities")),
 });
 
 /** JSON Schema (draft 2020-12) for one provider record. */
-export const providerSchema: Json = obj(
-  {
-    meta: ref("ProviderMeta"),
-    types: list(ref("ContainerType")),
-  },
-  ["meta", "types"],
-);
+export const providerSchema: Json = shape<Provider>({
+  meta: req(ref("ProviderMeta")),
+  types: req(list(ref("ContainerType"))),
+});
 
 const defs: Record<string, Json> = {
   Capabilities: capabilities,
-  ProviderMeta: obj(
-    {
-      id: kebab,
-      name: str,
-      website: https,
-      docs: https,
-      pricingUrl: https,
-      description: str,
-      logo: obj({ simpleIcons: str, svg: str, brandUrl: https }),
-      envVars: list(str),
-      isolation: list(en(ISOLATION_CLASSES)),
-      regions: list(
-        obj(
-          {
-            id: kebab,
-            name: str,
-            geo: str,
-            selectable: bool,
-            priceMultiplier: posNum,
-          },
-          ["id", "name", "geo", "selectable"],
-        ),
-      ),
-      sizingMode: en([
-        "free-form",
-        "presets",
-        "template",
-        "snapshot",
-        "memory-only",
-      ]),
-      freeTier: str,
-      status: en(["ga", "preview", "closed-core", "unverified"]),
-      verifiedAt: date,
-      capabilities: ref("Capabilities"),
-    },
-    [
-      "id",
-      "name",
-      "website",
-      "docs",
-      "pricingUrl",
-      "description",
-      "logo",
-      "envVars",
-      "isolation",
-      "regions",
-      "sizingMode",
-      "freeTier",
-      "status",
-      "verifiedAt",
-    ],
-  ),
-  Rate: obj(
-    {
-      dimension: en([
-        "vcpu",
-        "memory",
-        "disk",
-        "gpu",
-        "creation",
-        "egress",
-        "snapshot-storage",
-      ]),
-      unit: en([
-        "per-vcpu-hour",
-        "per-gib-hour",
-        "per-gb-month",
-        "per-gpu-hour",
-        "per-1M-creations",
-        "per-gb",
-      ]),
-      usd: { type: "number", minimum: 0 },
-      raw: obj({ value: num, unit: str }, ["value", "unit"]),
-      gpuType: en(GPU_TYPES),
-      regionMultiplier: {
-        type: "object",
-        additionalProperties: posNum,
-      },
-      verifiedAt: date,
-      sourceUrl: https,
-    },
-    ["dimension", "unit", "usd", "verifiedAt", "sourceUrl"],
-  ),
-  PriceBook: obj(
-    {
-      currency: en(["USD", "EUR"]),
-      billing: en([
-        "wall-clock",
-        "active-cpu",
-        "memory-only",
-        "active-cpu+provisioned-memory",
-      ]),
-      granularity: en(["ms", "10ms", "s", "min"]),
-      minimums: obj({ vcpu: num, memoryMiB: posInt, billedMinutes: num }),
-      rates: list(ref("Rate")),
-      monthlyFeeUsd: num,
-      includedCreditUsd: num,
-    },
-    ["currency", "billing", "granularity", "rates"],
-  ),
-  ContainerType: obj(
-    {
-      id: kebab,
-      provider: kebab,
-      kind: en(["preset", "template", "free-form"]),
-      vcpu: numberOrRange(posNum),
-      memoryMiB: numberOrRange(posInt),
-      diskGiB: numberOrRange(posNum),
-      gpu: list(
-        obj(
-          {
-            type: en(GPU_TYPES),
-            count: posInt,
-            vramGiB: posNum,
-            preemptible: bool,
-          },
-          ["type", "count"],
-        ),
-      ),
-      os: list(en(OS_VALUES)),
-      arch: list(en(ARCH_VALUES)),
-      isolation: en(ISOLATION_CLASSES),
-      regions: list(str),
-      limits: obj({
-        maxLifetimeSec: num,
-        maxConcurrent: num,
-        planGate: str,
-      }),
-      price: ref("PriceBook"),
-      capabilities: ref("Capabilities"),
-    },
-    [
-      "id",
-      "provider",
-      "kind",
-      "vcpu",
-      "memoryMiB",
-      "os",
-      "arch",
-      "isolation",
-      "regions",
-    ],
-  ),
+  ProviderMeta: providerMeta,
+  Rate: rate,
+  PriceBook: priceBook,
+  ContainerType: containerType,
 };
 
 /** JSON Schema (draft 2020-12) for the served `catalog.json` document. */
 export const catalogSchema: Json = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "berth catalog",
-  ...obj(
-    {
-      schemaVersion: { const: SCHEMA_VERSION },
-      generatedAt: { type: "string", format: "date-time" },
-      providers: list(ref("Provider")),
-    },
-    ["schemaVersion", "generatedAt", "providers"],
-  ),
+  ...shape<{
+    schemaVersion: number;
+    generatedAt: string;
+    providers: Provider[];
+  }>({
+    schemaVersion: req({ const: SCHEMA_VERSION }),
+    generatedAt: req({ type: "string", format: "date-time" }),
+    providers: req(list(ref("Provider"))),
+  }),
   $defs: { Provider: providerSchema, ...defs },
 };

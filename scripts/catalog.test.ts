@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { catalogSchema, SCHEMA_VERSION } from "../packages/berth/src/index.ts";
+import {
+  builtInProviders,
+  catalogSchema,
+  SCHEMA_VERSION,
+} from "../packages/berth/src/index.ts";
 import { fixture } from "../packages/berth/tests/fixture.ts";
 import { buildCatalog, sortKeys } from "./build-catalog.ts";
 import { checkCatalog } from "./check-catalog.ts";
@@ -41,4 +45,28 @@ test("validator violations are reported", () => {
   const c = good() as any;
   c.providers[0].types[0].regions = ["nowhere"];
   expect(checkCatalog(c, catalogSchema).join("\n")).toContain("nowhere");
+});
+
+test("all registered data validates against the schema", () => {
+  const built = JSON.parse(JSON.stringify(buildCatalog()));
+  expect(built.providers.length).toBe(builtInProviders.length);
+  expect(built.providers.length).toBeGreaterThan(0);
+  for (const p of built.providers)
+    expect(checkCatalog({ ...built, providers: [p] }, catalogSchema)).toEqual(
+      [],
+    );
+});
+
+test("schema keeps additionalProperties false on every object", () => {
+  const c = good() as any;
+  c.providers[0].types[0].bogusField = 1;
+  expect(checkCatalog(c, catalogSchema).join("\n")).toContain("bogusField");
+  const walk = (s: any): void => {
+    if (s && typeof s === "object") {
+      if (s.type === "object" && s.properties)
+        expect(s.additionalProperties).toBe(false);
+      Object.values(s).forEach(walk);
+    }
+  };
+  walk(catalogSchema);
 });
