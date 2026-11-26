@@ -53,12 +53,26 @@ function checkNumber(
   } else errs.push(`${label} must be a number or {min, max}`);
 }
 
+const RATE_UNITS: Record<string, readonly string[]> = {
+  vcpu: ["per-vcpu-hour"],
+  memory: ["per-gib-hour"],
+  gpu: ["per-gpu-hour"],
+  disk: ["per-gib-hour", "per-gb-month"],
+  creation: ["per-1M-creations"],
+  egress: ["per-gb"],
+  "snapshot-storage": ["per-gb-month"],
+};
+
 function validatePrice(label: string, p: PriceBook, errs: string[]) {
   p.rates.forEach((r, i) => {
     const l = `${label}.rates[${i}]`;
     if (!isHttps(r.sourceUrl))
       errs.push(`${l}.sourceUrl is required and must be an https URL`);
     if (!isIso(r.verifiedAt)) errs.push(`${l}.verifiedAt must be an ISO date`);
+    if (!RATE_UNITS[r.dimension]?.includes(r.unit))
+      errs.push(
+        `${l}: unit "${r.unit}" is not valid for dimension "${r.dimension}"`,
+      );
     if (typeof r.usd !== "number" || !(r.usd >= 0))
       errs.push(`${l}.usd must be a number >= 0`);
     if (

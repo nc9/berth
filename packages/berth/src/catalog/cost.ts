@@ -13,6 +13,8 @@ export interface Usage {
   vcpu?: number;
   memoryMiB?: number;
   gpuCount?: number;
+  /** Disk usage in GiB-hours. Without it, disk rates are skipped. */
+  diskGiBHours?: number;
   region?: string;
 }
 
@@ -25,9 +27,18 @@ export interface CostLine {
   usd: number;
 }
 
+export interface SkippedRate {
+  dimension: Rate["dimension"];
+  unit: Rate["unit"];
+  reason: string;
+}
+
 export interface CostEstimate {
+  /** Sum of `breakdown` only. Rates in `skipped` are NOT included. */
   usd: number;
   breakdown: CostLine[];
+  /** Every rate that was not included in `usd`, with the reason. */
+  skipped: SkippedRate[];
   billing: string;
   /** Oldest verifiedAt among the rates used. */
   verifiedAt: string;
@@ -111,29 +122,53 @@ export function estimateCost(type: ContainerType, usage: Usage): CostEstimate {
   }
 
   const breakdown: CostLine[] = [];
+  const skipped: SkippedRate[] = [];
   for (const rate of price.rates) {
     let quantity: number;
     let unit: string;
-    if (rate.dimension === "vcpu" && rate.unit === "per-vcpu-hour" && useVcpu) {
+    const skip = (reason: string) =>
+      skipped.push({ dimension: rate.dimension, unit: rate.unit, reason });
+    if (rate.dimension === "vcpu" && rate.unit === "per-vcpu-hour") {
+      if (!useVcpu) {
+        skip(`${price.billing} billing does not charge vcpu`);
+        continue;
+      }
       quantity = activeCpu ? cpuHours : vcpu * hours;
       unit = "vcpu-hour";
-    } else if (
-      rate.dimension === "memory" &&
-      rate.unit === "per-gib-hour" &&
-      useMemory
-    ) {
+    } else if (rate.dimension === "memory" && rate.unit === "per-gib-hour") {
+      if (!useMemory) {
+        skip(`${price.billing} billing does not charge memory`);
+        continue;
+      }
       quantity = memGiB * hours;
       unit = "gib-hour";
     } else if (rate.dimension === "gpu" && rate.unit === "per-gpu-hour") {
       if (
         rate.gpuType !== undefined &&
         !(type.gpu ?? []).some((g) => g.type === rate.gpuType)
-      )
+      ) {
+        skip(`type has no ${rate.gpuType} GPU`);
         continue;
+      }
       quantity = gpuCount * hours;
       unit = "gpu-hour";
-    } else continue;
-    if (quantity === 0 && rate.dimension === "gpu") continue;
+      if (quantity === 0) {
+        skip("gpu quantity is 0");
+        continue;
+      }
+    } else if (rate.dimension === "disk" && rate.unit === "per-gib-hour") {
+      if (usage.diskGiBHours === undefined) {
+        skip("usage.diskGiBHours not given");
+        continue;
+      }
+      if (!(usage.diskGiBHours >= 0))
+        throw new Error("usage.diskGiBHours must be >= 0");
+      quantity = usage.diskGiBHours;
+      unit = "gib-hour";
+    } else {
+      skip("rate is not modeled by estimateCost");
+      continue;
+    }
     const multiplier =
       usage.region !== undefined
         ? (rate.regionMultiplier?.[usage.region] ?? 1)
@@ -152,5 +187,5 @@ export function estimateCost(type: ContainerType, usage: Usage): CostEstimate {
     breakdown.map((l) => l.rate.verifiedAt).sort()[0] ??
     price.rates.map((r) => r.verifiedAt).sort()[0] ??
     "";
-  return { usd, breakdown, billing: price.billing, verifiedAt };
+  return { usd, breakdown, skipped, billing: price.billing, verifiedAt };
 }

@@ -39,6 +39,18 @@ describe("validators", () => {
     t.price!.rates[0]!.sourceUrl = "";
     has(validateContainerType(t), "sourceUrl");
   });
+  test("rate dimension and unit must pair", () => {
+    const t = type();
+    t.price!.rates[0]!.unit = "per-gib-hour";
+    has(validateContainerType(t), "not valid for dimension");
+    const ok = type();
+    ok.price!.rates.push({
+      ...ok.price!.rates[0]!,
+      dimension: "egress",
+      unit: "per-gb",
+    });
+    expect(validateContainerType(ok)).toEqual([]);
+  });
   test("integer MiB", () => {
     has(validateContainerType({ ...type(), memoryMiB: 1024.5 }), "memoryMiB");
     has(

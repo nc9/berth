@@ -97,4 +97,32 @@ describe("estimateCost", () => {
       "requires usage.cpuSeconds",
     );
   });
+  test("reports unmodeled rates instead of dropping them", () => {
+    const t = structuredClone(small);
+    const base = t.price!.rates[0]!;
+    t.price!.rates.push(
+      { ...base, dimension: "egress", unit: "per-gb" },
+      { ...base, dimension: "creation", unit: "per-1M-creations" },
+      { ...base, dimension: "disk", unit: "per-gib-hour", usd: 0.5 },
+    );
+    const r = c.estimateCost(t, { seconds: 3600, vcpu: 1, memoryMiB: 1024 });
+    expect(r.skipped.map((s) => s.dimension)).toEqual([
+      "egress",
+      "creation",
+      "disk",
+    ]);
+    expect(r.skipped.every((s) => s.reason.length > 0)).toBe(true);
+    const d = c.estimateCost(t, {
+      seconds: 3600,
+      vcpu: 1,
+      memoryMiB: 1024,
+      diskGiBHours: 10,
+    });
+    expect(d.skipped.map((s) => s.dimension)).toEqual(["egress", "creation"]);
+    expect(d.usd).toBeCloseTo(r.usd + 5, 10);
+  });
+  test("skipped is empty when every rate is modeled", () => {
+    const r = c.estimateCost(small, { seconds: 60, vcpu: 1, memoryMiB: 1024 });
+    expect(r.skipped).toEqual([]);
+  });
 });
