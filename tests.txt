@@ -1,3 +1,4 @@
+packages/berth/tests/auth.test.ts
 packages/berth/tests/catalog.test.ts
 packages/berth/tests/clouds.test.ts
 packages/berth/tests/cost.test.ts

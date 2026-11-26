@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { ContainerType, Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -67,7 +69,8 @@ export const boatdev: Provider = {
     description:
       "Persistent Ubuntu VMs for AI agents with SSH, Docker and fast snapshot forking, billed per second.",
     logo: { brandUrl: "https://boat.dev" },
-    envVars: ["BOAT_API_KEY"],
+    auth: AUTH.boatdev,
+    envVars: envVarsFromAuth(AUTH.boatdev),
     isolation: ["linux-vm"],
     regions: [
       {

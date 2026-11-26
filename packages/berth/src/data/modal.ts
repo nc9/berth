@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { GpuType } from "../catalog/gpus.ts";
 import type {
   ContainerType,
@@ -157,7 +159,8 @@ export const modal: Provider = {
     description:
       "Sandboxes on gVisor by default, or a VM runtime with its own kernel (no GPU). Free-form CPU and memory, many GPU types. A Modal core is 2 vCPU: rates are converted to per-vCPU-hour and the vendor value is kept in `raw`. Regional usage multipliers (1.15x broad, 1.75x narrow) are documented but not mapped to ids. The VM runtime has no separate documented price, so its type carries none. The upper bound of CPU and memory is not documented.",
     logo: { simpleIcons: "modal" },
-    envVars: ["MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET"],
+    auth: AUTH.modal,
+    envVars: envVarsFromAuth(AUTH.modal),
     isolation: ["gvisor", "linux-vm"],
     regions,
     sizingMode: "free-form",

@@ -1,3 +1,4 @@
+import { AUTH_KINDS, AUTH_STATUS_VALUES } from "./types.ts";
 import { GPU_TYPES } from "./gpus.ts";
 import { ISOLATION_CLASSES, ARCH_VALUES, OS_VALUES } from "./primitives.ts";
 import type {
@@ -86,6 +87,44 @@ function validatePrice(label: string, p: PriceBook, errs: string[]) {
     errs.push(`${label}.minimums.memoryMiB must be an integer MiB`);
 }
 
+/** Checks the auth methods of one provider. */
+export function validateAuth(p: ProviderMeta): string[] {
+  const errs: string[] = [];
+  const at = `provider ${p.id}`;
+  if (!Array.isArray(p.auth) || p.auth.length === 0) {
+    errs.push(`${at}: auth must list at least one method`);
+    return errs;
+  }
+  for (const d of dupes(p.auth.map((m) => m.id)))
+    errs.push(`${at}: duplicate auth method id "${d}"`);
+  const defaults = p.auth.filter((m) => m.default === true).length;
+  if (defaults !== 1)
+    errs.push(
+      `${at}: exactly one auth method must have default: true, found ${defaults}`,
+    );
+  for (const m of p.auth) {
+    const l = `${at}: auth "${m.id}"`;
+    if (!isKebab(m.id)) errs.push(`${l}: id must be kebab-case`);
+    if (!(AUTH_KINDS as readonly string[]).includes(m.kind))
+      errs.push(`${l}: unknown kind "${m.kind}"`);
+    if (!isHttps(m.docsUrl)) errs.push(`${l}: docsUrl must be an https URL`);
+    if (!isIso(m.verifiedAt)) errs.push(`${l}: verifiedAt must be an ISO date`);
+    if (!(AUTH_STATUS_VALUES as readonly string[]).includes(m.status))
+      errs.push(`${l}: status must be verified or unverified`);
+    if (m.status === "unverified" && !m.notes)
+      errs.push(`${l}: unverified method needs the reason in notes`);
+    for (const d of dupes(m.fields.map((f) => f.name)))
+      errs.push(`${l}: duplicate field name "${d}"`);
+    for (const f of m.fields) {
+      if (f.secret && f.example !== undefined)
+        errs.push(`${l}: secret field "${f.name}" must not carry an example`);
+      if (f.secret && f.default !== undefined)
+        errs.push(`${l}: secret field "${f.name}" must not carry a default`);
+    }
+  }
+  return errs;
+}
+
 export function validateProvider(p: ProviderMeta): string[] {
   const errs: string[] = [];
   const at = `provider ${p.id}`;
@@ -95,6 +134,7 @@ export function validateProvider(p: ProviderMeta): string[] {
   if (p.logo?.brandUrl !== undefined && !isHttps(p.logo.brandUrl))
     errs.push(`${at}: logo.brandUrl must be an https URL`);
   if (!isIso(p.verifiedAt)) errs.push(`${at}: verifiedAt must be an ISO date`);
+  errs.push(...validateAuth(p));
   for (const i of p.isolation)
     if (!(ISOLATION_CLASSES as readonly string[]).includes(i))
       errs.push(`${at}: unknown isolation "${i}"`);

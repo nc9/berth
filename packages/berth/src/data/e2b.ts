@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider, Rate } from "../catalog/types.ts";
 
 // Source: research/native.md (b), read 2026-11-26. Booleans in `capabilities`
@@ -23,7 +25,8 @@ export const e2b: Provider = {
     description:
       "Template-based sandboxes: CPU and memory are fixed per template at build time. Isolation is recorded as microvm (Firecracker) from a third-party source (Upstash); E2B's own template page does not name it, so treat it as unverified first-party. Regions are third-party too and not selectable per the docs read. Egress: `allowOut` takes IPs, CIDRs and domains (`*.` wildcards; HTTP:80 Host and TLS:443 SNI only); `denyOut` takes IPs and CIDRs only, never domains; allow beats deny. Disk is free. No GPU.",
     logo: { brandUrl: "https://e2b.dev" },
-    envVars: ["E2B_API_KEY"],
+    auth: AUTH.e2b,
+    envVars: envVarsFromAuth(AUTH.e2b),
     isolation: ["microvm"],
     regions: [
       {

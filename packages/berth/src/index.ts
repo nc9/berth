@@ -12,6 +12,7 @@ export type { GpuType } from "./catalog/gpus.ts";
 export * from "./catalog/primitives.ts";
 export * from "./catalog/types.ts";
 export {
+  validateAuth,
   validateContainerType,
   validateProvider,
   validateProviders,
@@ -32,3 +33,6 @@ export type {
 } from "./catalog/logo-manifest.ts";
 export { sanitizeSvg } from "./catalog/svg-sanitize.ts";
 export type { SanitizeResult } from "./catalog/svg-sanitize.ts";
+export { validateAuthConfig } from "./auth.ts";
+export { checkAuthConfig, envVarsFromAuth } from "./catalog/auth.ts";
+export type { AuthConfigResult } from "./catalog/auth.ts";

@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT } from "./helpers.ts";
 
@@ -11,7 +13,8 @@ export const morph: Provider = {
     description:
       "VM instances started from snapshots, with Infinibranch snapshot, branch and restore.",
     logo: { brandUrl: "https://cloud.morph.so" },
-    envVars: ["MORPH_API_KEY"],
+    auth: AUTH.morph,
+    envVars: envVarsFromAuth(AUTH.morph),
     isolation: ["linux-vm"],
     regions: [],
     sizingMode: "snapshot",

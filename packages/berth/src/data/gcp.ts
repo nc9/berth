@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT } from "./helpers.ts";
 
@@ -17,7 +19,8 @@ export const gcp: Provider = {
     description:
       "Sandbox-shaped Google Cloud services: Cloud Run jobs and sandboxes, GKE Agent Sandbox and Compute Engine.",
     logo: { brandUrl: "https://cloud.google.com/icons" },
-    envVars: ["GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"],
+    auth: AUTH.gcp,
+    envVars: envVarsFromAuth(AUTH.gcp),
     isolation: ["container", "gvisor", "linux-vm"],
     regions: [
       { id: "us-central1", name: "Iowa", geo: "us", selectable: true },

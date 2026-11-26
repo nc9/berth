@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -14,7 +16,8 @@ export const boxd: Provider = {
     description:
       "KVM microVM sandboxes, Ubuntu 24.04, persistent by default with sleep and resume.",
     logo: { brandUrl: "https://boxd.sh" },
-    envVars: [],
+    auth: AUTH.boxd,
+    envVars: envVarsFromAuth(AUTH.boxd),
     isolation: ["microvm"],
     regions: [
       {

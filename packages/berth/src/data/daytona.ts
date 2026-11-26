@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { GpuType } from "../catalog/gpus.ts";
 import type {
   Capabilities,
@@ -116,7 +118,8 @@ export const daytona: Provider = {
     description:
       "Sandboxes in three classes (container, linux-vm, windows) with GPU, snapshots and the widest discovery API of the set. The product moved to a closed core. Container-class isolation technology is not named; windows isolation is recorded as the weakest class because it is not documented. macOS appears on the pricing page with an odd unit (unverified) and is not modelled. GPU prices are the preemptible rates; on-demand rates are not shown.",
     logo: { brandUrl: "https://www.daytona.io" },
-    envVars: ["DAYTONA_API_KEY"],
+    auth: AUTH.daytona,
+    envVars: envVarsFromAuth(AUTH.daytona),
     isolation: ["container", "linux-vm"],
     regions: [
       { id: "us", name: "US (shared)", geo: "us", selectable: true },

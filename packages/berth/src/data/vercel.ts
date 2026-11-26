@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -13,7 +15,8 @@ export const vercel: Provider = {
     description:
       "Ephemeral compute sandboxes billed on active CPU and provisioned memory.",
     logo: { simpleIcons: "vercel" },
-    envVars: [],
+    auth: AUTH.vercel,
+    envVars: envVarsFromAuth(AUTH.vercel),
     isolation: ["microvm"],
     regions: [
       {
