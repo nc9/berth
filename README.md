@@ -84,7 +84,7 @@ const mine = createCatalog(mergeCatalog(builtInProviders, remote));
 
 ## Logos
 
-Each provider's `logo.files` points at committed brand images (`packages/berth/assets/logos/<id>/<icon|logo>-<light|dark>.<svg|png>`) fetched from context.dev by `bun scripts/fetch-logos.ts` (manual, needs `CONTEXT_DEV_API_KEY`, not run in CI). SVGs are sanitized before commit (`sanitizeSvg`); `manifest.json` records the domain, retrieval time and source URL of each file, or `missing: true` with a reason (aws and daytona: context.dev offers no light/dark images).
+Each provider's `logo.files` points at committed brand images (`packages/berth/assets/logos/<id>/<icon|logo>-<light|dark|opaque>.<svg|png>`) fetched from context.dev by `bun scripts/fetch-logos.ts` (manual, needs `CONTEXT_DEV_API_KEY`, not run in CI). SVGs are sanitized before commit (`sanitizeSvg`); `manifest.json` records the domain, retrieval time and source URL of each file, or `missing: true` with a reason (`opaque` is context.dev's `has_opaque_background` variant, used for both themes; providers with no usable image are `missing`, and aws and daytona need a rerun with an API key to fetch theirs).
 
 Logos are trademarks of their owners, included for identification only.
 

@@ -37,6 +37,8 @@ export interface LogoFiles {
 export interface LogoModes {
   light?: string;
   dark?: string;
+  /** Image with its own opaque background; fits both themes. */
+  opaque?: string;
 }
 
 export interface Logo {

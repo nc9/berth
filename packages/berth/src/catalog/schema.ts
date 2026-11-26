@@ -148,11 +148,12 @@ const region = shape<Region>({
 const logoPath: Json = {
   type: "string",
   pattern:
-    "^packages/berth/assets/logos/[a-z0-9-]+/(icon|logo)-(light|dark)\\.(svg|png)$",
+    "^packages/berth/assets/logos/[a-z0-9-]+/(icon|logo)-(light|dark|opaque)\\.(svg|png)$",
 };
 const logoModes = shape<LogoModes>({
   light: opt(logoPath),
   dark: opt(logoPath),
+  opaque: opt(logoPath),
 });
 
 const providerMeta = shape<ProviderMeta>({

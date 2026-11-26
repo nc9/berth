@@ -1,7 +1,13 @@
 import type { LogoFiles } from "./types.ts";
 
 export const LOGO_KINDS = ["icon", "logo"] as const;
-export const LOGO_MODES = ["light", "dark"] as const;
+export const LOGO_MODES = ["light", "dark", "opaque"] as const;
+/** context.dev mode names that differ from ours (opaque: has_opaque_background, used for both themes). */
+export const API_MODE: Record<(typeof LOGO_MODES)[number], string> = {
+  light: "light",
+  dark: "dark",
+  opaque: "has_opaque_background",
+};
 export const LOGO_DIR = "packages/berth/assets/logos";
 
 export interface ManifestFile {

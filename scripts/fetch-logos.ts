@@ -2,8 +2,16 @@
 // Manual only (not run in CI). Usage: bun scripts/fetch-logos.ts
 // Needs CONTEXT_DEV_API_KEY in the environment; the key is only ever sent as
 // a bearer header and never printed or written.
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import {
+  API_MODE,
   LOGO_DIR,
   LOGO_KINDS,
   LOGO_MODES,
@@ -40,10 +48,13 @@ const stripQuery = (u: string) => {
 export function pick(
   logos: BrandLogo[],
   kind: string,
-  mode: string,
+  mode: keyof typeof API_MODE,
 ): BrandLogo[] {
   const cands = logos.filter(
-    (l) => l.type === kind && l.mode === mode && l.url?.startsWith("https://"),
+    (l) =>
+      l.type === kind &&
+      l.mode === API_MODE[mode] &&
+      l.url?.startsWith("https://"),
   );
   const isSvg = (l: BrandLogo) => stripQuery(l.url!).endsWith(".svg");
   const area = (l: BrandLogo) =>
@@ -130,7 +141,7 @@ async function fetchProvider(
       missing: true,
       reason: notes.length
         ? notes.join("; ")
-        : "no light/dark icon or logo offered",
+        : "no light, dark or opaque icon or logo offered",
     };
   return { ...base, files, ...(notes.length ? { notes } : {}) };
 }
@@ -141,8 +152,12 @@ if (import.meta.main) {
     console.error("CONTEXT_DEV_API_KEY is not set; export it and rerun.");
     process.exit(1);
   }
-  rmSync(`${root}${LOGO_DIR}`, { recursive: true, force: true });
   mkdirSync(`${root}${LOGO_DIR}`, { recursive: true });
+  // A failed fetch must not discard files that are already committed.
+  const manifestPath = `${root}${LOGO_DIR}/manifest.json`;
+  const old: LogoManifest = existsSync(manifestPath)
+    ? (JSON.parse(readFileSync(manifestPath, "utf8")) as LogoManifest)
+    : { providers: {} };
   const manifest: LogoManifest = { providers: {} };
   for (const p of [...baseProviders].sort((a, b) =>
     a.meta.id.localeCompare(b.meta.id),
@@ -156,7 +171,23 @@ if (import.meta.main) {
         reason: `fetch failed: ${(err as Error).message}`,
       }),
     );
+    const prev = old.providers[p.meta.id];
+    if ("missing" in e && prev && !("missing" in prev)) {
+      console.log(
+        p.meta.id,
+        `fetch failed (${e.reason}); keeping previous files`,
+      );
+      manifest.providers[p.meta.id] = prev;
+      continue;
+    }
     manifest.providers[p.meta.id] = e;
+    // Drop files from earlier runs that this run did not write.
+    const dir = `${root}${LOGO_DIR}/${p.meta.id}`;
+    const keep = new Set(
+      "missing" in e ? [] : e.files.map((f) => f.path.split("/").pop()),
+    );
+    if (existsSync(dir))
+      for (const n of readdirSync(dir)) if (!keep.has(n)) rmSync(`${dir}/${n}`);
     console.log(
       p.meta.id,
       "missing" in e ? `missing (${e.reason})` : `${e.files.length} files`,

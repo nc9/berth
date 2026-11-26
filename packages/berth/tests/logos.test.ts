@@ -123,3 +123,41 @@ describe("logo manifest", () => {
     }
   });
 });
+
+describe("sanitizeSvg allowlist", () => {
+  const svg = (inner: string) =>
+    `<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+  test("refuses non-SVG namespaces", () => {
+    expect(
+      sanitizeSvg(
+        svg(
+          '<iframe xmlns="http://www.w3.org/1999/xhtml" srcdoc="&lt;script&gt;x&lt;/script&gt;"/>',
+        ),
+      ).ok,
+    ).toBe(false);
+    expect(
+      sanitizeSvg('<svg xmlns:s="http://www.w3.org/2000/svg"><s:style/></svg>')
+        .ok,
+    ).toBe(false);
+  });
+  test("drops elements outside the allowlist", () => {
+    const out = ok(
+      svg(
+        '<iframe src="https://e.test/"/><object data="x"/><embed src="x"/><rect/>',
+      ),
+    );
+    expect(out).not.toMatch(/iframe|object|embed|e\.test/);
+    expect(out).toContain("<rect/>");
+  });
+  test("drops css escapes, image-set and named entities", () => {
+    for (const v of [
+      "fill:\\75rl(https://e.test/a)",
+      "background:image-set('https://e.test/a' 1x)",
+      "fill:&colon;x",
+    ])
+      expect(ok(svg(`<rect style="${v}"/>`))).not.toContain("style=");
+  });
+  test("refuses style blocks with escapes", () => {
+    expect(sanitizeSvg(svg("<style>@\\69mport 'x';</style>")).ok).toBe(false);
+  });
+});

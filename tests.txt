@@ -18,4 +18,5 @@ packages/sdk/tests/errors.test.ts
 packages/sdk/tests/isolation.test.ts
 packages/sdk/tests/provider.test.ts
 scripts/catalog.test.ts
+scripts/fetch-logos.test.ts
 scripts/test-list.test.ts

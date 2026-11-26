@@ -5,7 +5,7 @@
       "retrievedAt": "2026-11-26T10:01:20.603Z",
       "source": "context.dev",
       "missing": true,
-      "reason": "no light/dark icon or logo offered"
+      "reason": "not fetched: context.dev offers only has_opaque_background icons; rerun bun scripts/fetch-logos.ts with an API key"
     },
     "azure": {
       "domain": "azure.microsoft.com",
@@ -108,7 +108,7 @@
       "retrievedAt": "2026-11-26T10:01:22.632Z",
       "source": "context.dev",
       "missing": true,
-      "reason": "no light/dark icon or logo offered"
+      "reason": "not fetched: context.dev offers only has_opaque_background icons; rerun bun scripts/fetch-logos.ts with an API key"
     },
     "e2b": {
       "domain": "e2b.dev",

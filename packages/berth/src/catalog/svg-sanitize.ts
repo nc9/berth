@@ -6,10 +6,44 @@
 export type SanitizeResult =
   { ok: true; svg: string } | { ok: false; reason: string };
 
-const DROP_ELEMENTS = new Set(["script", "foreignobject"]);
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XLINK_NS = "http://www.w3.org/1999/xlink";
+
+// Allowlists (lowercase). Anything else is dropped; unknown namespaces refuse.
+const ELEMENTS = new Set(
+  (
+    "svg g a defs symbol use path rect circle ellipse line polyline polygon text tspan " +
+    "title desc clippath mask lineargradient radialgradient stop pattern marker image style " +
+    "filter feblend fecolormatrix fecomponenttransfer fecomposite feconvolvematrix " +
+    "fediffuselighting fedisplacementmap fedropshadow feflood fefunca fefuncb fefuncg fefuncr " +
+    "fegaussianblur feimage femerge femergenode femorphology feoffset fespecularlighting " +
+    "fetile feturbulence fedistantlight fepointlight fespotlight metadata"
+  ).split(" "),
+);
+const ATTRS = new Set(
+  (
+    "id class style href viewbox preserveaspectratio width height x y x1 x2 y1 y2 cx cy r rx ry " +
+    "d points transform fill fill-opacity fill-rule clip-rule clip-path clippathunits mask " +
+    "maskunits maskcontentunits stroke stroke-width stroke-opacity stroke-linecap " +
+    "stroke-linejoin stroke-miterlimit stroke-dasharray stroke-dashoffset opacity color " +
+    "offset stop-color stop-opacity gradientunits gradienttransform spreadmethod fx fy fr " +
+    "patternunits patterncontentunits patterntransform refx refy markerwidth markerheight " +
+    "markerunits orient display visibility overflow filter filterunits primitiveunits in in2 " +
+    "result mode type values stddeviation dx dy operator k1 k2 k3 k4 flood-color flood-opacity " +
+    "color-interpolation-filters basefrequency numoctaves seed scale xchannelselector " +
+    "ychannelselector tablevalues slope intercept amplitude exponent radius order kernelmatrix " +
+    "divisor bias targetx targety edgemode surfacescale diffuseconstant specularconstant " +
+    "specularexponent lighting-color azimuth elevation z pointsatx pointsaty pointsatz " +
+    "limitingconeangle font-family font-size font-weight font-style text-anchor " +
+    "dominant-baseline letter-spacing text-decoration vector-effect shape-rendering " +
+    "image-rendering color-rendering paint-order mix-blend-mode isolation version xml:space " +
+    "role aria-label aria-hidden aria-labelledby aria-describedby focusable tabindex lang"
+  ).split(" "),
+);
 const SAFE_HREF =
   /^(#[^\s"'<>]*|data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]*)$/i;
 const NAME = /^[A-Za-z_][\w.-]*(:[A-Za-z_][\w.-]*)?$/;
+const PREFIXED_ATTRS = new Set(["xlink:href", "xml:space", "xmlns:xlink"]);
 const ATTR = /\s+([^\s=/>"']+)\s*=\s*(?:"([^"]*)"|'([^']*)')/y;
 
 const local = (name: string) => name.slice(name.indexOf(":") + 1).toLowerCase();
@@ -19,7 +53,13 @@ const esc = (v: string) => v.replace(/"/g, "&quot;");
 function unsafeValue(v: string): boolean {
   // Numeric entities can hide a scheme; drop rather than decode.
   if (/&#/.test(v)) return true;
+  // Only the five predefined entities; named ones could hide a scheme.
+  if (/&(?!(amp|lt|gt|quot|apos);)/.test(v)) return true;
+  // CSS escapes can spell url( or other keywords.
+  if (v.includes("\\")) return true;
   const s = v;
+  if (/image-set\s*\(|\bsrc\s*\(|expression\s*\(|\bimage\s*\(/i.test(s))
+    return true;
   if (/javascript:/i.test(s)) return true;
   for (const m of s.matchAll(/url\(\s*(['"]?)\s*([^)'"]*)/gi))
     if (!m[2]!.startsWith("#")) return true;
@@ -95,18 +135,26 @@ export function sanitizeSvg(input: string): SanitizeResult {
     if (!close) return fail("malformed attributes");
     p += close[0].length;
     const selfClosing = close[1] === "/";
+    if (name.includes(":"))
+      return fail("prefixed element names are not allowed");
     if (!sawRoot) {
-      if (local(name) !== "svg") return fail("root element is not svg");
+      if (name !== "svg") return fail("root element is not svg");
       sawRoot = true;
     }
     const names = new Set<string>();
-    for (const [a] of attrs) {
+    for (const [a, v] of attrs) {
       if (names.has(a)) return fail("duplicate attribute");
       names.add(a);
+      // Any namespace other than SVG (and xlink) could switch to XHTML etc.
+      if (a === "xmlns" && v !== SVG_NS) return fail("non-SVG namespace");
+      if (a === "xmlns:xlink" && v !== XLINK_NS)
+        return fail("non-SVG namespace");
+      if (a.startsWith("xmlns:") && a !== "xmlns:xlink")
+        return fail("namespace prefix is not allowed");
     }
     const drop =
       skipDepth > 0 ||
-      DROP_ELEMENTS.has(local(name)) ||
+      !ELEMENTS.has(name.toLowerCase()) ||
       // SMIL can rewrite href after load.
       (/^(set|animate)$/.test(local(name)) &&
         attrs.some(([a, v]) => a === "attributeName" && /href/i.test(v)));
@@ -119,6 +167,12 @@ export function sanitizeSvg(input: string): SanitizeResult {
       let tag = `<${name}`;
       for (const [a, v] of attrs) {
         const l = local(a);
+        if (
+          a.includes(":")
+            ? !PREFIXED_ATTRS.has(a)
+            : !ATTRS.has(a.toLowerCase()) && a !== "xmlns"
+        )
+          continue;
         if (/^on/i.test(l)) continue;
         if (l === "href" && !SAFE_HREF.test(v.trim())) continue;
         if (
@@ -145,5 +199,6 @@ export function sanitizeSvg(input: string): SanitizeResult {
     if (css.some((m) => unsafeValue(m[1]!)))
       return fail("style references external resources");
   }
+  if (/<[^>]*:style[\s>]/i.test(out)) return fail("namespaced style");
   return { ok: true, svg: out };
 }
