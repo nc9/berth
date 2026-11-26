@@ -11,6 +11,9 @@ describe("catalog", () => {
       "aws",
       "azure",
       "gcp",
+      "daytona",
+      "modal",
+      "e2b",
     ]);
   });
   test("lookups", () => {
