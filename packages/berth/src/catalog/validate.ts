@@ -117,9 +117,15 @@ export function validateAuth(p: ProviderMeta): string[] {
       errs.push(`${l}: fields must be an array`);
       continue;
     }
+    if (m.fields.some((f) => f === null || typeof f !== "object")) {
+      errs.push(`${l}: every field must be an object`);
+      continue;
+    }
     for (const d of dupes(m.fields.map((f) => f.name)))
       errs.push(`${l}: duplicate field name "${d}"`);
     for (const f of m.fields) {
+      if (typeof f.secret !== "boolean" || typeof f.required !== "boolean")
+        errs.push(`${l}: field "${f.name}" needs boolean secret and required`);
       if (f.secret && f.example !== undefined)
         errs.push(`${l}: secret field "${f.name}" must not carry an example`);
       if (f.secret && f.default !== undefined)

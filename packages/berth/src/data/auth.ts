@@ -188,8 +188,14 @@ export const AUTH = {
           "Azure subscription to create resources in.",
           { required: false },
         ),
+        plain(
+          "send-certificate-chain",
+          "AZURE_CLIENT_SEND_CERTIFICATE_CHAIN",
+          "Set to true to send the x5c certificate chain.",
+          { required: false },
+        ),
       ],
-      verified: true,
+      verified: false,
       notes:
         "Certificate variables are stated on the docs page. AZURE_SUBSCRIPTION_ID is not named there (see service-principal).",
     }),
@@ -319,7 +325,7 @@ export const AUTH = {
   vercel: [
     method({
       id: "access-token",
-      kind: "token_pair",
+      kind: "api_key",
       label: "Access token with team and project",
       default: true,
       docsUrl: VERCEL_AUTH,
