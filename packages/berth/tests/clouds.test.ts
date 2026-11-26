@@ -45,7 +45,9 @@ describe("cloud catalog data", () => {
     );
   });
   test("allowlist egress is only Azure ACA Sandboxes", () => {
-    const found = catalog.find({ egress: "allowlist" });
+    const found = catalog
+      .find({ egress: "allowlist" })
+      .filter((t) => ["aws", "azure", "gcp"].includes(t.provider));
     expect(found.length).toBeGreaterThan(0);
     for (const t of found) {
       expect(t.provider).toBe("azure");

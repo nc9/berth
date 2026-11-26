@@ -20,6 +20,9 @@ describe("catalog", () => {
       "runloop",
       "northflank",
       "beam",
+      "daytona",
+      "modal",
+      "e2b",
     ]);
   });
   test("lookups", () => {

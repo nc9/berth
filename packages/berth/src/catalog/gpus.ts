@@ -11,5 +11,9 @@ export const GPU_TYPES = [
   "b200",
   "rtx-4090",
   "rtx-pro-6000",
+  "rtx-5090",
+  "a10",
+  "b300",
+  "mi355x",
 ] as const;
 export type GpuType = (typeof GPU_TYPES)[number];

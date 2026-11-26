@@ -5,8 +5,11 @@ import { beam } from "./beam.ts";
 import { blaxel } from "./blaxel.ts";
 import { boxd } from "./boxd.ts";
 import { cloudflare } from "./cloudflare.ts";
+import { daytona } from "./daytona.ts";
+import { e2b } from "./e2b.ts";
 import { fly } from "./fly.ts";
 import { gcp } from "./gcp.ts";
+import { modal } from "./modal.ts";
 import { morph } from "./morph.ts";
 import { northflank } from "./northflank.ts";
 import { runloop } from "./runloop.ts";
@@ -25,4 +28,7 @@ export const providers: Provider[] = [
   runloop,
   northflank,
   beam,
+  daytona,
+  modal,
+  e2b,
 ];
