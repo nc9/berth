@@ -1,1 +1,4 @@
+packages/berth/tests/catalog.test.ts
+packages/berth/tests/cost.test.ts
+packages/berth/tests/validate.test.ts
 scripts/test-list.test.ts
