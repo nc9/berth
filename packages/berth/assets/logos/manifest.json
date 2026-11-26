@@ -2,10 +2,16 @@
   "providers": {
     "aws": {
       "domain": "aws.amazon.com",
-      "retrievedAt": "2026-11-26T10:01:20.603Z",
+      "retrievedAt": "2026-11-26T10:13:30.446Z",
       "source": "context.dev",
-      "missing": true,
-      "reason": "not fetched: context.dev offers only has_opaque_background icons; rerun bun scripts/fetch-logos.ts with an API key"
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/aws/icon-opaque.png",
+          "kind": "icon",
+          "mode": "opaque",
+          "sourceUrl": "https://media.brand.dev/7de990d8-02b3-4607-b62d-53c178fd7393.png"
+        }
+      ]
     },
     "azure": {
       "domain": "azure.microsoft.com",
@@ -105,10 +111,16 @@
     },
     "daytona": {
       "domain": "www.daytona.io",
-      "retrievedAt": "2026-11-26T10:01:22.632Z",
+      "retrievedAt": "2026-11-26T10:13:32.462Z",
       "source": "context.dev",
-      "missing": true,
-      "reason": "not fetched: context.dev offers only has_opaque_background icons; rerun bun scripts/fetch-logos.ts with an API key"
+      "files": [
+        {
+          "path": "packages/berth/assets/logos/daytona/icon-opaque.png",
+          "kind": "icon",
+          "mode": "opaque",
+          "sourceUrl": "https://media.brand.dev/f09a4bda-f563-40a5-a204-8d9328ec1ad6.png"
+        }
+      ]
     },
     "e2b": {
       "domain": "e2b.dev",

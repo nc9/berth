@@ -2,6 +2,11 @@
 import type { LogoFiles } from "../catalog/types.ts";
 
 export const logoFiles: Record<string, LogoFiles> = {
+  aws: {
+    icon: {
+      opaque: "packages/berth/assets/logos/aws/icon-opaque.png",
+    },
+  },
   azure: {
     icon: {
       dark: "packages/berth/assets/logos/azure/icon-dark.png",
@@ -36,6 +41,11 @@ export const logoFiles: Record<string, LogoFiles> = {
     logo: {
       light: "packages/berth/assets/logos/cloudflare/logo-light.svg",
       dark: "packages/berth/assets/logos/cloudflare/logo-dark.svg",
+    },
+  },
+  daytona: {
+    icon: {
+      opaque: "packages/berth/assets/logos/daytona/icon-opaque.png",
     },
   },
   e2b: {
