@@ -1,0 +1,12 @@
+# Repo-owned run config. Never holds security policy (trust, egress, identity, merge).
+
+[setup]
+commands = ["bun install --frozen-lockfile"]
+
+[checks]
+# Cheap, staged files only.
+pre_commit = [
+  "git diff --cached --name-only -z --diff-filter=ACM -- '*.ts' '*.json' | xargs -0 -r bun fmt --check",
+]
+# Once per push. The runner also runs these itself at the end of a run.
+pre_push = ["bun run typecheck", "bun run test"]

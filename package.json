@@ -1,0 +1,17 @@
+{
+  "name": "berth-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "bun check",
+    "test": "bun scripts/test.ts",
+    "format": "bun fmt",
+    "format:check": "bun fmt --check"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4"
+  }
+}

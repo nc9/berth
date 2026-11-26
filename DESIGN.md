@@ -6,13 +6,13 @@ Nik's direction (chat, 2026-11-26): build one library, in the style of pi-ai, th
 
 ## 1. Layers: what is global, per server and per org
 
-| Layer | Holds | Where it lives |
-|---|---|---|
-| Catalog | Providers, container types, regions, capabilities, prices | The library: hand-curated data plus API refreshers. Global, like pi-ai's model list. |
-| Adapters | One lifecycle implementation per provider behind one interface | The library: one package per provider |
-| Server ceiling | Which provider kinds this server allows; an optional server-owned default account (today's Daytona) | Each product's admin settings (DB config) |
-| Org | Provider accounts (credentials in the org vault), enabled providers, chosen container types and overrides, GPU and budget caps, routing policy | Each product, per org (Longshore #350 Part 1) |
-| Stats | Per-run measurements | Each product's DB. An org sees its own; the server admin sees them combined across orgs. |
+| Layer          | Holds                                                                                                                                          | Where it lives                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Catalog        | Providers, container types, regions, capabilities, prices                                                                                      | The library: hand-curated data plus API refreshers. Global, like pi-ai's model list.     |
+| Adapters       | One lifecycle implementation per provider behind one interface                                                                                 | The library: one package per provider                                                    |
+| Server ceiling | Which provider kinds this server allows; an optional server-owned default account (today's Daytona)                                            | Each product's admin settings (DB config)                                                |
+| Org            | Provider accounts (credentials in the org vault), enabled providers, chosen container types and overrides, GPU and budget caps, routing policy | Each product, per org (Longshore #350 Part 1)                                            |
+| Stats          | Per-run measurements                                                                                                                           | Each product's DB. An org sees its own; the server admin sees them combined across orgs. |
 
 Startup time and error rate belong to the provider, not the org. Combining them across orgs gives the router a usable signal much sooner.
 

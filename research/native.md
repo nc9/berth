@@ -11,6 +11,7 @@ Reach caveat: boxd.sh and docs.boxd.sh refused connections from the fetch tool (
 Package is now `@earendil-works/pi-ai` v1.6.1 (https://github.com/badlogic/pi-mono/blob/main/packages/ai/package.json). The old single hand-run `scripts/generate-models.ts` no longer exists; the pipeline is `packages/ai/catalog/`.
 
 ### Generation
+
 - Command: `npm run generate-models` = `node catalog/generate.ts --strict` (package.json scripts; `build` runs it first). Layout and build order: https://github.com/badlogic/pi-mono/blob/main/packages/ai/catalog/README.md
 - Upstream sources, all fetched before anything is built (`catalog/sources/`): `models-dev.ts` (models.dev v2 `https://models.dev/experimental/v2.0/api.json`, normalised through `normalizeModelsDevModel()` because "the schema is published as experimental"), `openrouter.ts`, `vercel-ai-gateway.ts`; the README also names NVIDIA NIM and Radius modules.
 - One file per provider, `catalog/providers/<id>.ts` (about 45: anthropic, openai, google, groq, ...), each calling `defineProvider({id, models: ctx => modelsDevModels(ctx, "<id>", {api, baseUrl}), compat, finalize})`. Local corrections for wrong upstream data are allowed but kept small ("prefer fixing wrong upstream data in models.dev"). `catalog/families/` holds facts true on every host (e.g. Claude effort levels).
@@ -18,6 +19,7 @@ Package is now `@earendil-works/pi-ai` v1.6.1 (https://github.com/badlogic/pi-mo
 - Freshness: `.github/workflows/publish-model-catalog.yml`, cron `17 8-13 * * 1-5` (weekdays; publish job uploads only at 10:17, 12:17, 14:17 Europe/Vienna) to R2, served by pi.dev. Released clients fetch it "within hours, without updating pi" and merge it with their own code defaults (README, "Released clients"). `MINIMUM_PI_VERSION` gates catalog format changes. `models.generated.ts` itself last changed 2026-11-04 (git history), so the committed snapshot is a floor, the served catalog is the live source.
 
 ### Model type (https://github.com/badlogic/pi-mono/blob/main/packages/ai/src/types.ts, `src/providers/model-schema.ts`)
+
 - `BaseModel`: `id`, `name`, `api`, `provider`, `baseUrl`, `input` (modalities), `inputLimits`, `cost`, `headers`.
 - `Model` adds: `type?: "chat"` (image and classifier models share the registry with `type: "image" | "classifier"`), `reasoning: boolean`, `thinkingLevelMap?`, `promptCache?`, `contextWindow: number`, `maxTokens: number`, `samplingParams?`, `samplingParamsByThinkingLevel?`, `compat?` (per-API quirks, auto-detected from baseUrl if unset).
 - `api` is `KnownApi | (string & {})` (open union), provider id is `KnownProvider | string`.
@@ -25,6 +27,7 @@ Package is now `@earendil-works/pi-ai` v1.6.1 (https://github.com/badlogic/pi-mo
 - Take-away for compute: the cost block is flat numbers plus tiers, with ONE unit; compute needs per-dimension units (core-second, GiB-hour, GPU-hour), so a unit field per price is required.
 
 ### Registry API (README https://github.com/badlogic/pi-mono/blob/main/packages/ai/README.md; `src/models.ts`)
+
 - A `Models` collection holds a `Map<providerId, Provider>`. Sync reads: `models.getProviders()`, `getProvider(id)`, `getModels(provider?)`, `getModel(provider, id)` (first match by id; undefined if none), `getModelsOfType('image'|'classifier', ...)`.
 - Static typed reads without a collection: `getBuiltinProviders()`, `getBuiltinModel('openai','gpt-4o-mini')` (from `@earendil-works/pi-ai/providers/all`), literal-typed ids.
 - Dynamic providers: reads stay sync and return the last-known list; `await models.refresh({providers:[...]})` is the explicit async fetch; stale refreshes are discarded by a generation counter.
@@ -32,6 +35,7 @@ Package is now `@earendil-works/pi-ai` v1.6.1 (https://github.com/badlogic/pi-mo
 - Custom/unknown models: `createProvider({id, auth: {apiKey: envApiKeyAuth(...)}, models: [{id, name, api, provider, baseUrl, input, cost: {input:0,...}, ...}]})` then `models.setProvider(p)`. `api` and provider id are open strings, so unknown ones type-check. Auth belongs to the provider (env var names, OAuth, ambient creds).
 
 ### models.dev as a catalog source
+
 - v1 `https://models.dev/api.json`: provider keys; provider fields `id, env[], npm, api, name, doc, models`; model fields `id, name, family, attachment, reasoning, tool_call, structured_output, temperature, release_date, last_updated, modalities{input,output}, open_weights, limit{context,output,input?}, cost{input,output,cache_read,cache_write?,tiers?}, status, canonical_model_id`. Cost unit is not stated on the page (UNVERIFIED as per-1M tokens; pi-ai treats it so).
 - v2 schema (https://github.com/anomalyco/models.dev/blob/dev/packages/core/src/schema-v2.ts): provider `{id, name, doc, env, models}`; cost per modality with `price`, `unit`, `overrides[{when, price}]`, `multipliers`. Unit enum: `token, character, image, megapixel, second, minute`; "USD per 1M for token and character, per 1 unit otherwise". Override keys include `service_tier`, `context`, `region`, `utc_hours`. Good design precedent for region/tier price overrides. It is LLM-only: there is no compute catalog on models.dev.
 - Lesson: pi-ai copies upstream data by script and layers small hand corrections. No compute vendor publishes an equivalent upstream, so our registry is hand-curated with a `verified_at` and `source_url` per price (see (e)), with a few fields refreshable by API.
@@ -43,6 +47,7 @@ Package is now `@earendil-works/pi-ai` v1.6.1 (https://github.com/badlogic/pi-mo
 Legend: API facts cite vendor docs/OpenAPI. Prices as read.
 
 ### Modal
+
 - Isolation: gVisor by default, or a VM runtime (own kernel, KVM) selected with `runtime`; GPU sandboxes only gVisor. https://modal.com/docs/guide/sandboxes, https://modal.com/docs/guide/sandbox-networking
 - `Sandbox.create` params (https://modal.com/docs/reference/modal.Sandbox): `app, name, tags, image, env, secrets, timeout (default 300), idle_timeout, workdir, gpu (str), cloud, region (str|list), cpu (float|tuple), memory (int|tuple), runtime, block_network, outbound_cidr_allowlist, outbound_domain_allowlist, inbound_cidr_allowlist, volumes, pty, encrypted_ports, h2_ports, unencrypted_ports, readiness_probe, _experimental_enable_snapshot`. Methods: `exec`, `terminate`, `wait`, `from_name`, `list(app_id, tags)`, `snapshot_filesystem`, `snapshot_directory`.
 - Size: free-form `cpu` (physical cores; tuple = request,limit) and `memory` MiB. No preset catalog. Min 0.125 core and 128 MiB (pricing page).
@@ -55,6 +60,7 @@ Legend: API facts cite vendor docs/OpenAPI. Prices as read.
 - Logo: simple-icons slug `modal` (https://raw.githubusercontent.com/simple-icons/simple-icons/develop/slugs.md).
 
 ### Daytona
+
 - Isolation: classes `linux-vm`, `container`, `windows` (OpenAPI enum `SandboxClass`); docs say each sandbox has "a dedicated kernel, filesystem, network stack", and fork, pause/resume and snapshot-from-sandbox are VM-class capabilities (https://www.daytona.io/docs/en/sandboxes/). Container-class isolation technology is not named. Note: product moved to closed core (see `plans/research-landscape.md`).
 - OpenAPI `https://www.daytona.io/docs/openapi.json` (read 2026-11-26, v1.0). Programmatic discovery is the best of the set:
   - `GET /organizations/{id}/available-sandbox-classes` returns `AvailableSandboxClass {regionId, sandboxClass, gpuAvailable, allowedGpuTypes}`.
@@ -71,6 +77,7 @@ Legend: API facts cite vendor docs/OpenAPI. Prices as read.
 - Logo: no simple-icons slug.
 
 ### E2B
+
 - Isolation: Firecracker microVM per Upstash digest (https://upstash.com/blog/ai-agent-sandbox-providers-compared-2026.md, third party); E2B's template page does not name it (UNVERIFIED first-party).
 - Create/template: resources fixed per template, set at build by `cpuCount` / `memoryMB` (https://docs.e2b.dev/sandbox-template). `GET /templates` (deprecated; `/v2/templates` pages) returns `cpuCount, memoryMB, diskSizeMB, maxCpuCount?, maxMemoryMB?, envdVersion, buildStatus, public, names, ...` (https://docs.e2b.dev/api-reference/templates/list-templates). So template (type) listing is API-readable per team. Region listing: not documented in what I read.
 - Plan limits (https://e2b.dev/pricing): vCPU 1-8, RAM 1-8 GiB, default 2 vCPU/4 GiB; disk 10 GiB Hobby, 20 GiB Pro; no GPU; max session 1 h Hobby, 24 h Pro.
@@ -81,25 +88,31 @@ Legend: API facts cite vendor docs/OpenAPI. Prices as read.
 - Logo: no simple-icons slug.
 
 ### "boat.dev" = most likely **boxd** (https://boxd.sh)
+
 Reasoning: speech-to-text "boxd" sounds like "boat"/"box-dee"; boxd is a current sandbox/microVM provider and already in Omnara's list (https://docs.omnara.com/machines/providers/overview) and our landscape notes. Alternatives considered: Blaxel (name sounds different), Beam (beam.cloud; "boat" is not close). Confidence moderate; confirm with the user.
+
 - boxd (via https://docs.omnara.com/machines/providers/boxd; boxd's own site unreachable from the tool): KVM microVM, Ubuntu 24.04, own kernel, cold boot under 10 ms, machines persist by default, optional sleep with resume under 1 ms; size is that of its snapshot, else the org default (`boxd manage size set --vcpu 2`); EU data centres only; snapshots (`boxd snapshots save`).
 - Web-search digest of boxd docs (https://docs.boxd.sh/reference/pricing, https://boxd.sh/faq/; UNVERIFIED, not read directly): Individual EUR 20/month for 2 vCPU/8 GiB per VM, 10 concurrent VMs, 100 GB CoW disk per VM, 7-day trial; Python and TypeScript SDKs over gRPC; regions "coming" (US waitlist); sizes up to 4 vCPU/16 GiB by default, 50 machines per org.
 - Egress controls, GPU, list-types API, per-second price: not documented in what I could read.
 
 ### Blaxel (second candidate for "boat.dev")
+
 - https://docs.blaxel.ai/Sandboxes/Overview: VM sandboxes; `memory` MB given at create, CPU scales with memory (8 GB = 4 cores, 16 GB = 6); `region` e.g. `us-pdx-1` (full list not on that page; Upstash digest says Oregon, Virginia, London, Frankfurt, third party); standby after about 15 s idle, resume under 25 ms, snapshot of filesystem+memory+processes on standby; archive keeps fs only; snapshots can be forked; create params `name, image, memory, region, labels, ports, volumes, externalId, extraArgs (iptables, android, kernelExtensions), timeout`; max lifetime not stated.
 - Egress: Overview page defers to a "Proxy & network" section (not read); Upstash digest says domain allow/deny with wildcards, no CIDR (UNVERIFIED first-party).
 - Pricing (https://blaxel.ai/pricing): memory only, $0.0000115 per GB-second (about $0.0414/GB-h); snapshots $0.20/GB-month, images $0.045/GB-month, volumes $0.12/GB-month; up to $200 free credit; sandbox limits Tier 0 10, Tier 1 50, Tier 2 200. CPU not billed separately.
 
 ### "Myrtle" = most likely **Morph (Morph Cloud, cloud.morph.so)**
+
 Modal is already covered above, but the user separately said Myrtle, so Morph is the better fit ("Myrtle"/"Morph"). Morph's own docs (https://cloud.morph.so/docs/developers): instances start from snapshots with `ttl_seconds`, snapshot example `image_id="morphvm-minimal", vcpus=1, memory=4096, disk_size=16384` (MB), Infinibranch "snapshot, branch, and restore entire computational environments in under 250ms" (vendor claim), devboxes with auto-sleep/TTL, `expose-http`, Volumes, Python and TypeScript SDKs, `MORPH_API_KEY`. Pause/resume, regions, egress: not covered on that page. Pricing is in MCUs (Morph Compute Units) and per-unit rates were not public in search results (https://cloud.morph.so/web/subscribe; free tier 300 MCUs, paid tiers about $40 and $250 per month, UNVERIFIED). No sandbox provider literally named "Myrtle" turned up. Needs user confirmation.
 
 ### Vercel Sandbox
+
 - https://vercel.com/docs/sandbox/pricing.md (updated 2026-09-10): Active CPU $0.128/h, provisioned memory $0.0212/GB-h (iad1; rates differ per region), creations $0.60/1M, snapshot storage $0.08/GB-month, drives $0.05/GB-month. vCPUs 1 or even 2-32 (Pro max 8 vCPU/16 GB, Enterprise 32/64), each vCPU includes 2 GB, 64 GB NVMe, default timeout 5 min, max session 45 min Hobby / 24 h Pro, persistent sandboxes via snapshots (30-day default expiry), 19 regions, default `iad1`, concurrency 10 Hobby / 10,000 Pro. Regional prices are on the page (selector), so partly structured HTML.
 - Egress and isolation: Firecracker microVM and domain/CIDR allowlists per Upstash digest only (UNVERIFIED first-party).
 - Logo: simple-icons `vercel`.
 
 ### Cloudflare (Sandbox SDK on Containers)
+
 - Isolation: each Container instance is a microVM (https://developers.cloudflare.com/sandbox/). Egress: `enableInternet: false` at start; finer rules per Upstash digest (host globs and CIDRs, UNVERIFIED first-party).
 - Instance types (https://developers.cloudflare.com/containers/platform/pricing/): `lite` 1/16 vCPU 256 MiB 2 GB; `basic` 1/4 vCPU 1 GiB 4 GB; `standard-1` 1/2 vCPU 4 GiB 8 GB; `standard-2` 1 vCPU 6 GiB 12 GB; `standard-3` 2 vCPU 8 GiB 16 GB; `standard-4` 4 vCPU 12 GiB 20 GB.
 - Pricing: memory $0.0000025/GiB-s, CPU $0.000020/vCPU-s (active only), disk $0.00000007/GB-s; included 25 GiB-h, 375 vCPU-min, 200 GB-h on Workers Paid; 10 ms billing granularity. Region: not selectable (Upstash).
@@ -107,17 +120,21 @@ Modal is already covered above, but the user separately said Myrtle, so Morph is
 - Logo: simple-icons `cloudflare`.
 
 ### Fly Machines / Sprites
+
 - Machines presets (https://docs.fly.io/about/pricing): shared-cpu-1x 256 MB $2.19/mo, 1 GB $6.70/mo, shared-cpu-2x 2 GB $13.39/mo, performance-1x 2 GB $33/mo, performance-2x 4 GB $66/mo (iad/ewr); per-second billing, stopped machines $0.15/GB-month rootfs. Machine sizes and regions are listable through the Machines API (not read: UNVERIFIED).
 - Sprites (https://fly.io/sprites): hardware-isolated Linux VM, $0.0385/CPU-h, $0.021875/GB-h, hot storage $0.000683/GB-h, cold $0.000027/GB-h, 100 GB volume, $5/month free plan usage, checkpoints about 1 s copy-on-write (restore rewinds files, does not resume processes), warm/cold sleep, wake on HTTP; API `PUT https://api.sprites.dev/v1/sprites/<name>`, `POST .../exec`; SDKs JS/Go/Python/Elixir. Egress: "MCP servers can run with an egress policy"; DNS allowlist per Upstash (UNVERIFIED).
 - Logo: simple-icons `flydotio`.
 
 ### Runloop
+
 - https://docs.runloop.ai/docs/devboxes/lifecycle: states provisioning, initializing, running, suspending, suspended, resuming, shutdown; suspend keeps disk only (no memory), original ID persists; compute billed only while initializing/running/suspending/resuming. Sizes, egress, max lifetime: not on that page (not documented in my reads). Upstash digest calls it "winding down" with $0.108/CPU-h, $0.0252/GB-h (UNVERIFIED); my own search found no shutdown notice, only 2026 incidents. Treat as UNVERIFIED either way.
 
 ### Northflank
+
 - https://northflank.com/pricing: $0.01667/vCPU-h, $0.00833/GB-h, billed per second; plans 0.5 vCPU/1 GB through 8 vCPU/16 GB; GPUs per hour L4 $0.80, A100-40 $1.42, A100-80 $1.76, H100 $2.74 (8 only), RTX PRO 6000 $3.00, H200 $3.14, B200 $5.87; disk $0.11657/GiB-month; egress $0.06/GB; Sandbox plan free up to $20/month. Isolation Kata + Cloud Hypervisor, 17 regions, egress policies BYOC-only per Upstash (UNVERIFIED first-party).
 
 ### Beam (beam.cloud)
+
 - Docs (https://docs.beam.cloud/v2/sandbox/overview): `Sandbox(cpu, memory, image, keep_warm_seconds)`, default lifetime 600 s (`-1` = manual), `update_ttl`, `connect(container_id)`; snapshots/fork mentioned. Egress params not shown there. Pricing (https://beam.cloud/pricing, per hour): Performance $0.05/vCPU + $0.01/GiB, Shared $0.011 + $0.0055, Spot $0.0063 + $0.00135; sandboxes billed per ms; GPUs H100 $2.75, A100-80 $1.49, L40S $1.08, RTX 4090 $0.66 (from-prices); Developer $20 monthly credit. Isolation gVisor+runc, microVM via `use_vm=True`; allowlists to 64 CIDRs (Upstash, UNVERIFIED first-party).
 
 ---
@@ -126,20 +143,20 @@ Modal is already covered above, but the user separately said Myrtle, so Morph is
 
 "Machine-readable" = prices in an API/JSON, not only a page. None of the vendors publishes a price API in what I read, so every column says No; only Vercel and Cloudflare have structured tables on pages.
 
-| Provider | List types via API? | Regions via API? | GPU | OS | Isolation | Egress allowlist | Snapshots | Pause/resume | Price machine-readable? | Price examples |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Modal | No (free-form cpu/memory) | No (docs list) | T4, L4, A10, L40S, A100, H100, H200, B200, B300, RTX PRO 6000 (up to 8) | Linux | gVisor or VM | Domain (beta, SNI), CIDR, block-all | Filesystem (memory: not documented) | No | No | $0.071/vCPU-h, $0.024/GiB-h, H100 $3.95/h |
-| Daytona | Yes (`available-sandbox-classes`, `region-quota`, `snapshots`) | Yes (`/regions`, `/shared-regions`) | 9 types, up to 8; preemptible | Linux, Windows, macOS (pricing) | Container or VM per class | Domain (100), CIDR (10), block-all; one at a time | Yes (incl. memory) | Yes (VM class) | No | $0.0504/vCPU-h, $0.0162/GiB-h, H100 $2.47/h preempt |
-| E2B | Partly (`GET /templates`: cpuCount, memoryMB, disk) | Not documented | No | Linux | Firecracker (third party) | Domain/CIDR allow, IP/CIDR deny | Yes (persistent snapshot) | Yes (memory+fs) | No | $0.0504/vCPU-h, $0.0162/GiB-h |
-| boxd | Not documented | Not documented | Not documented | Linux (Ubuntu 24.04) | KVM microVM | Not documented | Yes | Sleep/wake | No | EUR 20/month (2 vCPU/8 GiB) UNVERIFIED |
-| Blaxel | Not documented | Not documented | No | Linux | microVM | Domain (UNVERIFIED) | Yes (standby, fork) | Yes (standby) | No | $0.0414/GB-h memory only |
-| Morph | Not documented | Not documented | Not documented | Linux | VM | Not documented | Yes (Infinibranch) | Not documented | No (MCU) | MCU, not public |
-| Vercel Sandbox | No | Docs (19) | No | Linux | Firecracker (third party) | Domain/CIDR (UNVERIFIED) | Yes | Persistent sessions | Page tables | $0.128/active vCPU-h, $0.0212/GB-h |
-| Cloudflare | Named `instance_type`s (docs table) | No (not selectable) | No | Linux | microVM | `enableInternet: false`; finer UNVERIFIED | Beta/R2 backups | Sleep | Page table | $0.072/vCPU-h active, $0.009/GiB-h |
-| Fly Machines/Sprites | Machines API (UNVERIFIED) | Machines API (UNVERIFIED) | Machines GPUs (not read) | Linux | Firecracker/VM | DNS allowlist (Sprites, UNVERIFIED) | Sprites checkpoints | Warm/cold sleep | No | Sprites $0.0385/CPU-h, $0.021875/GB-h |
-| Runloop | Not documented | Not documented | Not documented | Linux | VM | Hostname (UNVERIFIED) | Disk snapshot | Suspend (disk) | No | $0.108/CPU-h (UNVERIFIED) |
-| Northflank | Plans list | Docs (17, UNVERIFIED) | A100/H100/H200/B200/L4/RTX PRO | Linux | Kata/CHV | BYOC only (UNVERIFIED) | Volumes | No | No | $0.01667/vCPU-h, $0.00833/GB-h |
-| Beam | Not documented | Not documented | Yes (many) | Linux | gVisor; microVM opt-in | Block-all, host/IP/CIDR (UNVERIFIED) | Yes | No | No | $0.05/vCPU-h Performance |
+| Provider             | List types via API?                                            | Regions via API?                    | GPU                                                                     | OS                              | Isolation                 | Egress allowlist                                  | Snapshots                           | Pause/resume        | Price machine-readable? | Price examples                                      |
+| -------------------- | -------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------- | ------------------------- | ------------------------------------------------- | ----------------------------------- | ------------------- | ----------------------- | --------------------------------------------------- |
+| Modal                | No (free-form cpu/memory)                                      | No (docs list)                      | T4, L4, A10, L40S, A100, H100, H200, B200, B300, RTX PRO 6000 (up to 8) | Linux                           | gVisor or VM              | Domain (beta, SNI), CIDR, block-all               | Filesystem (memory: not documented) | No                  | No                      | $0.071/vCPU-h, $0.024/GiB-h, H100 $3.95/h           |
+| Daytona              | Yes (`available-sandbox-classes`, `region-quota`, `snapshots`) | Yes (`/regions`, `/shared-regions`) | 9 types, up to 8; preemptible                                           | Linux, Windows, macOS (pricing) | Container or VM per class | Domain (100), CIDR (10), block-all; one at a time | Yes (incl. memory)                  | Yes (VM class)      | No                      | $0.0504/vCPU-h, $0.0162/GiB-h, H100 $2.47/h preempt |
+| E2B                  | Partly (`GET /templates`: cpuCount, memoryMB, disk)            | Not documented                      | No                                                                      | Linux                           | Firecracker (third party) | Domain/CIDR allow, IP/CIDR deny                   | Yes (persistent snapshot)           | Yes (memory+fs)     | No                      | $0.0504/vCPU-h, $0.0162/GiB-h                       |
+| boxd                 | Not documented                                                 | Not documented                      | Not documented                                                          | Linux (Ubuntu 24.04)            | KVM microVM               | Not documented                                    | Yes                                 | Sleep/wake          | No                      | EUR 20/month (2 vCPU/8 GiB) UNVERIFIED              |
+| Blaxel               | Not documented                                                 | Not documented                      | No                                                                      | Linux                           | microVM                   | Domain (UNVERIFIED)                               | Yes (standby, fork)                 | Yes (standby)       | No                      | $0.0414/GB-h memory only                            |
+| Morph                | Not documented                                                 | Not documented                      | Not documented                                                          | Linux                           | VM                        | Not documented                                    | Yes (Infinibranch)                  | Not documented      | No (MCU)                | MCU, not public                                     |
+| Vercel Sandbox       | No                                                             | Docs (19)                           | No                                                                      | Linux                           | Firecracker (third party) | Domain/CIDR (UNVERIFIED)                          | Yes                                 | Persistent sessions | Page tables             | $0.128/active vCPU-h, $0.0212/GB-h                  |
+| Cloudflare           | Named `instance_type`s (docs table)                            | No (not selectable)                 | No                                                                      | Linux                           | microVM                   | `enableInternet: false`; finer UNVERIFIED         | Beta/R2 backups                     | Sleep               | Page table              | $0.072/vCPU-h active, $0.009/GiB-h                  |
+| Fly Machines/Sprites | Machines API (UNVERIFIED)                                      | Machines API (UNVERIFIED)           | Machines GPUs (not read)                                                | Linux                           | Firecracker/VM            | DNS allowlist (Sprites, UNVERIFIED)               | Sprites checkpoints                 | Warm/cold sleep     | No                      | Sprites $0.0385/CPU-h, $0.021875/GB-h               |
+| Runloop              | Not documented                                                 | Not documented                      | Not documented                                                          | Linux                           | VM                        | Hostname (UNVERIFIED)                             | Disk snapshot                       | Suspend (disk)      | No                      | $0.108/CPU-h (UNVERIFIED)                           |
+| Northflank           | Plans list                                                     | Docs (17, UNVERIFIED)               | A100/H100/H200/B200/L4/RTX PRO                                          | Linux                           | Kata/CHV                  | BYOC only (UNVERIFIED)                            | Volumes                             | No                  | No                      | $0.01667/vCPU-h, $0.00833/GB-h                      |
+| Beam                 | Not documented                                                 | Not documented                      | Yes (many)                                                              | Linux                           | gVisor; microVM opt-in    | Block-all, host/IP/CIDR (UNVERIFIED)              | Yes                                 | No                  | No                      | $0.05/vCPU-h Performance                            |
 
 Biggest cross-vendor finding: per-vCPU-hour prices cluster at $0.05-0.07 for E2B/Daytona/Modal/Fly Sprites, and Vercel/Cloudflare bill active CPU only, which breaks any single "cost per hour" number. The model must carry a `billing` basis.
 
@@ -160,55 +177,59 @@ Biggest cross-vendor finding: per-vCPU-hour prices cluster at $0.05-0.07 for E2B
 Principles: static, hand-curated JSON/TS (like pi-ai's committed catalog) with `verified_at` + `source_url` per price; optional per-provider `refresh()` for the few API-readable parts (Daytona classes/regions/quotas, E2B templates). Reuse Turntable's `IsolationClass` and `EgressPolicy` names; add `os`/`arch` as open string unions (pi-ai `Api` pattern: `Known | (string & {})`). Fill state: Y = fillable from a documented source, P = partly, N = not documented.
 
 ### ProviderMeta
-| Field | Type / unit | Notes |
-|---|---|---|
-| `id` | string, kebab | `modal`, `daytona`, `e2b`, `boxd`, ... |
-| `name` | string | |
-| `website`, `docs`, `pricingUrl` | URL | all Y |
-| `description` | one line | Y |
-| `logo` | `{simpleIcons?: slug, svgPath?: string, brandUrl?: URL}` | simple-icons covers modal, vercel, cloudflare, flydotio only; others need a vendored SVG or brand-kit link (not checked for license) |
-| `envVars` | string[] | credential names (models.dev `env` precedent) |
-| `capabilities` | see below | |
-| `isolation` | `IsolationClass[]` | Modal 2, Daytona 2 (+windows) |
-| `regions` | `{id, name, geo?: string, priceMultiplier?: number, selectable: boolean}[]` | Y for Modal, Vercel (docs); Daytona via API; N for boxd, Morph |
-| `sizingMode` | `"free-form" \| "presets" \| "template" \| "snapshot" \| "memory-only"` | from Omnara's table, plus Modal free-form, Cloudflare presets, E2B template |
-| `freeTier` | `{creditUsd?: number, period: "once"\|"month", note?: string}` | Modal $30/mo; Daytona $200 once; E2B $100 once; Vercel Hobby quotas; Blaxel up to $200; Beam $20/mo |
-| `status` | `"active"\|"closed-core"\|"unverified"` | Daytona closed-core, Runloop unverified |
-| `verifiedAt` | ISO date | per record |
+
+| Field                           | Type / unit                                                                 | Notes                                                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                            | string, kebab                                                               | `modal`, `daytona`, `e2b`, `boxd`, ...                                                                                               |
+| `name`                          | string                                                                      |                                                                                                                                      |
+| `website`, `docs`, `pricingUrl` | URL                                                                         | all Y                                                                                                                                |
+| `description`                   | one line                                                                    | Y                                                                                                                                    |
+| `logo`                          | `{simpleIcons?: slug, svgPath?: string, brandUrl?: URL}`                    | simple-icons covers modal, vercel, cloudflare, flydotio only; others need a vendored SVG or brand-kit link (not checked for license) |
+| `envVars`                       | string[]                                                                    | credential names (models.dev `env` precedent)                                                                                        |
+| `capabilities`                  | see below                                                                   |                                                                                                                                      |
+| `isolation`                     | `IsolationClass[]`                                                          | Modal 2, Daytona 2 (+windows)                                                                                                        |
+| `regions`                       | `{id, name, geo?: string, priceMultiplier?: number, selectable: boolean}[]` | Y for Modal, Vercel (docs); Daytona via API; N for boxd, Morph                                                                       |
+| `sizingMode`                    | `"free-form" \| "presets" \| "template" \| "snapshot" \| "memory-only"`     | from Omnara's table, plus Modal free-form, Cloudflare presets, E2B template                                                          |
+| `freeTier`                      | `{creditUsd?: number, period: "once"\|"month", note?: string}`              | Modal $30/mo; Daytona $200 once; E2B $100 once; Vercel Hobby quotas; Blaxel up to $200; Beam $20/mo                                  |
+| `status`                        | `"active"\|"closed-core"\|"unverified"`                                     | Daytona closed-core, Runloop unverified                                                                                              |
+| `verifiedAt`                    | ISO date                                                                    | per record                                                                                                                           |
 
 ### Capabilities (per provider, overridable per type)
-| Field | Type | Notes |
-|---|---|---|
-| `createFrom` | `("image"\|"snapshot"\|"template")[]` | already in Turntable |
-| `snapshots` | `{fs: bool, memory: bool, fork: bool, fromRunning: bool}` | Daytona Y all; E2B Y; Modal fs only; Cloudflare beta |
-| `pause` | `{supported: bool, keepsMemory: bool, resumeMs?: number}` | E2B 1 s resume; Blaxel under 25 ms; boxd under 1 ms (vendor claims) |
-| `egress` | `{policies: EgressPolicy[], domainMatch?: "sni"\|"dns"\|"sni+host", cidrMax?: number, domainMax?: number, mutuallyExclusive?: bool, runtimeUpdate: bool}` | Daytona cidrMax 10, domainMax 100, exclusive; Modal sni, additive; E2B sni+host |
-| `maxLifetimeSec` | `number \| null` | Modal 86400 (create timeout), E2B 86400 Pro / 3600 Hobby, Vercel 86400 / 2700; Daytona `ttlMinutes` + org `maxSandboxLifespan`; others N |
-| `exec` | `{detached: bool, streaming: bool, tty: bool, perExecTimeout: bool}` | Turntable shape |
-| `files` | `{upload: bool, download: bool, maxBytes?: number}` | Modal N (not documented on guide), ComputeSDK shows read/write |
-| `labels`, `list` | bool | Modal `tags`/`list`; Daytona `labels`; E2B list by state |
-| `ingress` | bool | port exposure |
-| `idleTimeout`, `autoDelete` | bool | |
-| `discovery` | `{types: "api"\|"docs", regions: "api"\|"docs", pricing: "docs"}` | drives refresh logic |
+
+| Field                       | Type                                                                                                                                                      | Notes                                                                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `createFrom`                | `("image"\|"snapshot"\|"template")[]`                                                                                                                     | already in Turntable                                                                                                                     |
+| `snapshots`                 | `{fs: bool, memory: bool, fork: bool, fromRunning: bool}`                                                                                                 | Daytona Y all; E2B Y; Modal fs only; Cloudflare beta                                                                                     |
+| `pause`                     | `{supported: bool, keepsMemory: bool, resumeMs?: number}`                                                                                                 | E2B 1 s resume; Blaxel under 25 ms; boxd under 1 ms (vendor claims)                                                                      |
+| `egress`                    | `{policies: EgressPolicy[], domainMatch?: "sni"\|"dns"\|"sni+host", cidrMax?: number, domainMax?: number, mutuallyExclusive?: bool, runtimeUpdate: bool}` | Daytona cidrMax 10, domainMax 100, exclusive; Modal sni, additive; E2B sni+host                                                          |
+| `maxLifetimeSec`            | `number \| null`                                                                                                                                          | Modal 86400 (create timeout), E2B 86400 Pro / 3600 Hobby, Vercel 86400 / 2700; Daytona `ttlMinutes` + org `maxSandboxLifespan`; others N |
+| `exec`                      | `{detached: bool, streaming: bool, tty: bool, perExecTimeout: bool}`                                                                                      | Turntable shape                                                                                                                          |
+| `files`                     | `{upload: bool, download: bool, maxBytes?: number}`                                                                                                       | Modal N (not documented on guide), ComputeSDK shows read/write                                                                           |
+| `labels`, `list`            | bool                                                                                                                                                      | Modal `tags`/`list`; Daytona `labels`; E2B list by state                                                                                 |
+| `ingress`                   | bool                                                                                                                                                      | port exposure                                                                                                                            |
+| `idleTimeout`, `autoDelete` | bool                                                                                                                                                      |                                                                                                                                          |
+| `discovery`                 | `{types: "api"\|"docs", regions: "api"\|"docs", pricing: "docs"}`                                                                                         | drives refresh logic                                                                                                                     |
 
 ### ContainerType
-| Field | Type / unit | Notes |
-|---|---|---|
-| `id` | string | `daytona/linux-vm/4x8x10`, `cloudflare/standard-3`, `modal/cpu-2-8g` (synthetic where free-form) |
-| `provider` | `ProviderMeta.id` | |
-| `kind` | `"preset" \| "template" \| "free-form-range"` | Modal/Daytona = range |
-| `vcpu` | `number` or `{min,max,step?}` | vCPU (not "physical core": Modal's core = 2 vCPU, record `vcpuPerBillingUnit`) |
-| `memoryMiB` | number or range | MiB (E2B memoryMB is MiB; Blaxel MB; Modal MiB) |
-| `diskGiB` | number or range | Y for Daytona, Vercel 64, Cloudflare, E2B plan; N Modal, Blaxel |
-| `gpu` | `{type: string, count: number\|{max}, vramGiB?: number, preemptible?: bool}[]` | Daytona enum, Modal strings, Northflank list; canonical GPU ids needed |
-| `os` | `("linux"\|"windows"\|"macos")[]` | Daytona only has the three |
-| `arch` | `("x86_64"\|"arm64")[]` | N almost everywhere (Runloop arm64 incident text only) |
-| `isolation` | `IsolationClass` | |
-| `regions` | `string[]` | `region.id`s, with `global: true` for Cloudflare |
-| `limits` | `{maxLifetimeSec?, maxConcurrent?, planGate?: string}` | e.g. E2B Hobby 10 concurrent |
-| `price` | `PriceBook` | below |
+
+| Field       | Type / unit                                                                    | Notes                                                                                            |
+| ----------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `id`        | string                                                                         | `daytona/linux-vm/4x8x10`, `cloudflare/standard-3`, `modal/cpu-2-8g` (synthetic where free-form) |
+| `provider`  | `ProviderMeta.id`                                                              |                                                                                                  |
+| `kind`      | `"preset" \| "template" \| "free-form-range"`                                  | Modal/Daytona = range                                                                            |
+| `vcpu`      | `number` or `{min,max,step?}`                                                  | vCPU (not "physical core": Modal's core = 2 vCPU, record `vcpuPerBillingUnit`)                   |
+| `memoryMiB` | number or range                                                                | MiB (E2B memoryMB is MiB; Blaxel MB; Modal MiB)                                                  |
+| `diskGiB`   | number or range                                                                | Y for Daytona, Vercel 64, Cloudflare, E2B plan; N Modal, Blaxel                                  |
+| `gpu`       | `{type: string, count: number\|{max}, vramGiB?: number, preemptible?: bool}[]` | Daytona enum, Modal strings, Northflank list; canonical GPU ids needed                           |
+| `os`        | `("linux"\|"windows"\|"macos")[]`                                              | Daytona only has the three                                                                       |
+| `arch`      | `("x86_64"\|"arm64")[]`                                                        | N almost everywhere (Runloop arm64 incident text only)                                           |
+| `isolation` | `IsolationClass`                                                               |                                                                                                  |
+| `regions`   | `string[]`                                                                     | `region.id`s, with `global: true` for Cloudflare                                                 |
+| `limits`    | `{maxLifetimeSec?, maxConcurrent?, planGate?: string}`                         | e.g. E2B Hobby 10 concurrent                                                                     |
+| `price`     | `PriceBook`                                                                    | below                                                                                            |
 
 ### PriceBook
+
 ```
 price: {
   currency: "USD" | "EUR",
@@ -222,25 +243,29 @@ price: {
   verifiedAt: string, sourceUrl: string
 }
 ```
+
 Store ONE canonical hourly unit and keep the vendor's raw number/unit alongside (`raw: {value, unit}`) so conversions (Modal core-second to vCPU-hour, Fly monthly to hourly, boxd monthly plan) are auditable. Each conversion above (Modal $0.071/vCPU-h, E2B $0.0504/vCPU-h, Cloudflare $0.072/vCPU-h) is my arithmetic from the cited per-second prices.
 
 ### Fill matrix (what each provider can fill)
-| Field | Modal | Daytona | E2B | boxd | Blaxel | Morph | Vercel | Cloudflare |
-|---|---|---|---|---|---|---|---|---|
-| vcpu/memory | Y free-form | Y free-form+snapshots | Y per template | P (snapshot/org size) | memory only | P (snapshot params) | Y | Y presets |
-| disk | N | Y | Y (plan) | P | N | Y (snapshot) | Y | Y |
-| gpu | Y | Y | n/a | N | n/a | N | n/a | n/a |
-| os/arch | Linux; arch N | Y/N | Linux; N | Linux; N | N | N | N | N |
-| regions | Y docs | Y API | N | EU | P | N | Y docs | none |
-| egress | Y | Y | Y | N | P | N | UNVERIFIED | P |
-| price | Y page | Y page | Y page | UNVERIFIED | Y partial | N | Y page | Y page |
+
+| Field       | Modal         | Daytona               | E2B            | boxd                  | Blaxel      | Morph               | Vercel     | Cloudflare |
+| ----------- | ------------- | --------------------- | -------------- | --------------------- | ----------- | ------------------- | ---------- | ---------- |
+| vcpu/memory | Y free-form   | Y free-form+snapshots | Y per template | P (snapshot/org size) | memory only | P (snapshot params) | Y          | Y presets  |
+| disk        | N             | Y                     | Y (plan)       | P                     | N           | Y (snapshot)        | Y          | Y          |
+| gpu         | Y             | Y                     | n/a            | N                     | n/a         | N                   | n/a        | n/a        |
+| os/arch     | Linux; arch N | Y/N                   | Linux; N       | Linux; N              | N           | N                   | N          | N          |
+| regions     | Y docs        | Y API                 | N              | EU                    | P           | N                   | Y docs     | none       |
+| egress      | Y             | Y                     | Y              | N                     | P           | N                   | UNVERIFIED | P          |
+| price       | Y page        | Y page                | Y page         | UNVERIFIED            | Y partial   | N                   | Y page     | Y page     |
 
 ### Mapping to existing interfaces
+
 - Turntable `ProviderInfo` maps almost 1:1 onto `capabilities` + `isolation`; `cost: none|estimate|exact` becomes derived from `price.verifiedAt`/`billing`. `sandbox-size.ts` classes (`cpus`, `memoryMb`, `diskGb`, `snapshot`) become a selector over `ContainerType`; its `memoryMb` vs our `memoryMiB` needs one agreed unit.
 - Longshore `NetworkPolicy {open|none|allowlist{domains,cidrs}}` should be capped by `capabilities.egress` at validation time: Daytona refuses mixed domain+CIDR and caps at 10/100; Modal accepts both; E2B deny lists reject domains. This is the check Longshore currently does by hand and the registry should expose it as `canApply(policy)`.
 - Lifecycle API (uniform): `create`, `exec` (detached), `files.put/get`, `state`, `destroy`, optional `pause/resume`, optional `snapshot`. Modal and Beam lack pause; Daytona pause is VM-only, E2B pause keeps memory, Runloop suspends disk only. Make `pause`/`snapshot` optional methods gated by capability flags, as Turntable's `adopt?` and `diagnose?` already are.
 
 ### Gaps / decisions for the user
+
 1. Confirm "boat.dev" = boxd and "Myrtle" = Morph.
 2. No vendor offers machine-readable pricing; the registry needs a curated file and a scheduled human or script re-check. Only Daytona (classes, regions, quotas) and E2B (templates) can auto-refresh sizes.
 3. Logos: simple-icons covers 4 of the 9 named providers; the rest need vendored brand assets (license unchecked).
