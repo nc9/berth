@@ -9,7 +9,9 @@
     "typecheck": "bun check",
     "test": "bun scripts/test.ts",
     "format": "bun fmt",
-    "format:check": "bun fmt --check"
+    "format:check": "bun fmt --check",
+    "catalog:build": "bun scripts/build-catalog.ts",
+    "catalog:check": "bun scripts/check-catalog.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.4"
