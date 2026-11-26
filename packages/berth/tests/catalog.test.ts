@@ -6,8 +6,15 @@ const c = createCatalog([fixture()]);
 const ids = (r: { id: string }[]) => r.map((t) => t.id).sort();
 
 describe("catalog", () => {
-  test("default catalog lists the registered providers", () => {
-    expect(catalog.getProviders().length).toBeGreaterThan(0);
+  test("default catalog holds the cloud providers", () => {
+    expect(catalog.getProviders().map((p) => p.id)).toEqual([
+      "aws",
+      "azure",
+      "gcp",
+      "daytona",
+      "modal",
+      "e2b",
+    ]);
   });
   test("lookups", () => {
     expect(c.getProviders().map((p) => p.id)).toEqual(["acme"]);

@@ -1,0 +1,168 @@
+import type { Provider } from "../catalog/types.ts";
+import { READ_AT } from "./helpers.ts";
+
+const NGFW_NOTE =
+  "No native domain allowlist. Cloud NGFW FQDN objects in a firewall policy are the add-on route (unverified: the docs page returned 404).";
+
+const NO_PRICE =
+  "No price: the Cloud Billing Catalog API needs a project and API key and no rate was read.";
+
+export const gcp: Provider = {
+  meta: {
+    id: "gcp",
+    name: "Google Cloud",
+    website: "https://cloud.google.com",
+    docs: "https://docs.cloud.google.com",
+    pricingUrl: "https://cloud.google.com/pricing",
+    description:
+      "Sandbox-shaped Google Cloud services: Cloud Run jobs and sandboxes, GKE Agent Sandbox and Compute Engine.",
+    logo: { brandUrl: "https://cloud.google.com/icons" },
+    envVars: ["GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"],
+    isolation: ["container", "gvisor", "linux-vm"],
+    regions: [
+      { id: "us-central1", name: "Iowa", geo: "us", selectable: true },
+      { id: "us-east4", name: "N. Virginia", geo: "us", selectable: true },
+      { id: "europe-west1", name: "Belgium", geo: "eu", selectable: true },
+      { id: "europe-west4", name: "Netherlands", geo: "eu", selectable: true },
+    ],
+    sizingMode: "free-form",
+    freeTier: "unverified",
+    status: "ga",
+    verifiedAt: READ_AT,
+  },
+  types: [
+    {
+      id: "cloud-run-job",
+      service: "cloud-run-jobs",
+      provider: "gcp",
+      kind: "free-form",
+      // Limits and sizes were not read; these are minimal placeholders.
+      vcpu: 1,
+      memoryMiB: 512,
+      os: ["linux"],
+      arch: ["x86_64"],
+      isolation: "container",
+      regions: ["us-central1"],
+      limits: { maxLifetimeSec: 168 * 3600 },
+      notes: [
+        "Task timeout defaults to 10 min and goes up to 168 h (7 days), or 12 h with GPU. 2nd-gen execution environment.",
+        "Sizes are not documented on the pages read: 1 vCPU/512 MiB is a placeholder. Regions beyond us-central1 and architecture are unverified.",
+        "GPU (one per instance: L4, RTX PRO 6000 Blackwell) exists but is not modelled.",
+        "Isolation class is reported as container; gen2 is not mapped to a class.",
+        "Egress is open by default. Network control is VPC firewall rules via direct VPC egress.",
+        NGFW_NOTE,
+        "Billing is vCPU-seconds and GiB-seconds at 100 ms granularity, but the rate tables did not render.",
+        NO_PRICE,
+      ],
+      capabilities: {
+        createFrom: ["image"],
+        egress: { policies: ["open"] },
+        maxLifetimeSec: 168 * 3600,
+        discovery: { types: false, regions: false, pricing: "api" },
+      },
+    },
+    {
+      id: "cloud-run-sandbox",
+      service: "cloud-run-sandboxes",
+      provider: "gcp",
+      kind: "free-form",
+      status: "preview",
+      vcpu: 1,
+      memoryMiB: 512,
+      os: ["linux"],
+      arch: ["x86_64"],
+      isolation: "container",
+      regions: ["us-central1"],
+      notes: [
+        "Preview (Pre-GA). Limits, lifetime, OS and pricing are not documented. Size, OS and architecture here are unverified placeholders.",
+        "Isolation technology is not named (the docs say 'isolate process execution'), so it is reported as container.",
+        "Egress is blocked by default. `--allow-egress` is all-or-nothing; there is no finer control. The docs advise VPC firewall rules.",
+        NGFW_NOTE,
+        "A 'milliseconds' start claim comes from a secondary source.",
+        "Snapshot is a tar of file state (`sandbox tar`); no memory snapshot is documented.",
+        NO_PRICE,
+      ],
+      capabilities: {
+        createFrom: ["image"],
+        snapshots: { fs: true, memory: false, fork: false },
+        egress: { policies: ["none", "open"] },
+        discovery: { types: false, regions: false, pricing: "api" },
+      },
+    },
+    {
+      id: "gke-agent-sandbox",
+      service: "gke-agent-sandbox",
+      provider: "gcp",
+      kind: "template",
+      vcpu: 1,
+      memoryMiB: 512,
+      os: ["linux"],
+      arch: ["x86_64"],
+      isolation: "gvisor",
+      regions: ["us-central1"],
+      notes: [
+        "Open source (Kubernetes SIG Apps) on a GKE cluster: Sandbox, SandboxTemplate, SandboxWarmPool and SandboxClaim CRDs. gVisor primary, Kata supported. GA status is not documented.",
+        "Sizes are the pod's and are not fixed by the product: 1 vCPU/512 MiB is a placeholder. Architecture and regions are unverified.",
+        "No extra charge: you pay for GKE nodes or Autopilot resources, so no per-sandbox price exists.",
+        "SandboxTemplate pods get a default-deny NetworkPolicy. FQDN policies are not covered, so there is no domain allowlist.",
+        "Warm pools typically start in under a second. Pod snapshots need GKE 1.35.3+, gVisor, not E2, no TPUs.",
+        "Exec and file API are not documented.",
+      ],
+      capabilities: {
+        createFrom: ["template"],
+        snapshots: { fs: true, memory: true, fork: false },
+        pause: { supported: true, keepsMemory: true },
+        egress: { policies: ["none", "open"] },
+        discovery: { types: false, regions: false, pricing: "api" },
+      },
+    },
+    {
+      id: "compute-engine-linux",
+      service: "compute-engine",
+      provider: "gcp",
+      kind: "free-form",
+      // Representative size: machine types are listed by machineTypes.list.
+      vcpu: 2,
+      memoryMiB: 8192,
+      os: ["linux"],
+      arch: ["x86_64", "arm64"],
+      isolation: "linux-vm",
+      regions: ["us-central1"],
+      notes: [
+        "Size is a representative 2 vCPU/8 GiB, not a range: list real types with machineTypes.list (OAuth, per zone).",
+        "KVM VM, exec via SSH, OS Login or IAP, and disk snapshots: all unverified.",
+        NGFW_NOTE,
+        "Pricing is in the Cloud Billing Catalog API, Compute service id 6F81-5844-456A. No example price was read.",
+      ],
+      capabilities: {
+        createFrom: ["image"],
+        egress: { policies: ["open"] },
+        discovery: { types: true, regions: false, pricing: "api" },
+      },
+    },
+    {
+      id: "compute-engine-windows",
+      service: "compute-engine",
+      provider: "gcp",
+      kind: "free-form",
+      vcpu: 2,
+      memoryMiB: 8192,
+      os: ["windows"],
+      arch: ["x86_64"],
+      isolation: "linux-vm",
+      regions: ["us-central1"],
+      notes: [
+        "Windows Server images are unverified (not read this pass). No macOS offering was seen.",
+        "Size is a representative 2 vCPU/8 GiB, not a range.",
+        "Isolation class linux-vm means a full hypervisor VM; the guest is Windows.",
+        NGFW_NOTE,
+        NO_PRICE,
+      ],
+      capabilities: {
+        createFrom: ["image"],
+        egress: { policies: ["open"] },
+        discovery: { types: true, regions: false, pricing: "api" },
+      },
+    },
+  ],
+};

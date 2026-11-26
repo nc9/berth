@@ -11,6 +11,9 @@ const type = (p: string, id: string) => {
 describe("native providers", () => {
   test("default catalog has the three providers and validates", () => {
     expect(catalog.getProviders().map((p) => p.id)).toEqual([
+      "aws",
+      "azure",
+      "gcp",
       "daytona",
       "modal",
       "e2b",

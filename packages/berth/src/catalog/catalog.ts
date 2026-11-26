@@ -60,7 +60,10 @@ export function createCatalog(providers: Provider[]): Catalog {
         p.types.filter((t) => {
           if (f.provider !== undefined && p.meta.id !== f.provider)
             return false;
-          if (f.status !== undefined && p.meta.status !== f.status)
+          if (
+            f.status !== undefined &&
+            (t.status ?? p.meta.status) !== f.status
+          )
             return false;
           if (f.os !== undefined && !t.os.includes(f.os)) return false;
           if (f.arch !== undefined && !t.arch.includes(f.arch)) return false;
