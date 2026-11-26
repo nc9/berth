@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { ContainerType, Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -94,12 +96,8 @@ export const azure: Provider = {
     logo: {
       brandUrl: "https://learn.microsoft.com/en-us/azure/architecture/icons/",
     },
-    envVars: [
-      "AZURE_TENANT_ID",
-      "AZURE_CLIENT_ID",
-      "AZURE_CLIENT_SECRET",
-      "AZURE_SUBSCRIPTION_ID",
-    ],
+    auth: AUTH.azure,
+    envVars: envVarsFromAuth(AUTH.azure),
     isolation: ["container", "microvm", "linux-vm"],
     regions: [
       { id: "eastus", name: "East US", geo: "us", selectable: true },

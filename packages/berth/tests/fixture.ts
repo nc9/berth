@@ -13,7 +13,35 @@ export function fixture(): Provider {
       pricingUrl: S,
       description: "Fixture provider",
       logo: { brandUrl: "https://example.com/logo.svg" },
-      envVars: ["ACME_API_KEY"],
+      auth: [
+        {
+          id: "api-key",
+          kind: "api_key",
+          label: "Acme API key",
+          default: true,
+          docsUrl: "https://example.com/docs/auth",
+          verifiedAt: V,
+          status: "verified",
+          fields: [
+            {
+              name: "api-key",
+              env: "ACME_API_KEY",
+              secret: true,
+              required: true,
+              description: "API key.",
+            },
+            {
+              name: "api-url",
+              env: "ACME_API_URL",
+              secret: false,
+              required: false,
+              description: "API URL.",
+              default: "https://api.example.com",
+            },
+          ],
+        },
+      ],
+      envVars: ["ACME_API_KEY", "ACME_API_URL"],
       isolation: ["container", "microvm"],
       regions: [
         { id: "us-east", name: "US East", geo: "us", selectable: true },

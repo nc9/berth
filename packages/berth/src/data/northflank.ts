@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -13,7 +15,8 @@ export const northflank: Provider = {
     description:
       "Plans from 0.5 vCPU/1 GB to 8 vCPU/16 GB on Kata and Cloud Hypervisor.",
     logo: { brandUrl: "https://northflank.com" },
-    envVars: [],
+    auth: AUTH.northflank,
+    envVars: envVarsFromAuth(AUTH.northflank),
     isolation: ["microvm"],
     regions: [],
     sizingMode: "presets",

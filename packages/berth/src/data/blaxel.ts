@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -12,7 +14,8 @@ export const blaxel: Provider = {
     pricingUrl: PRICING,
     description: "VM sandboxes sized by memory, with standby and fast resume.",
     logo: { brandUrl: "https://blaxel.ai" },
-    envVars: [],
+    auth: AUTH.blaxel,
+    envVars: envVarsFromAuth(AUTH.blaxel),
     isolation: ["microvm"],
     regions: [{ id: "us-pdx-1", name: "Oregon", geo: "us", selectable: true }],
     sizingMode: "memory-only",

@@ -64,6 +64,10 @@ Startup time and error rate belong to the provider, not the org. Combining them 
 
 Units: memory is in MiB everywhere. Turntable's `memoryMb` is already MiB in practice; rename it at extraction.
 
+### Auth methods
+
+`ProviderMeta.auth` is `AuthMethod[]` (at least one, exactly one `default`). An `AuthMethod` has `id`, `kind` (api_key | token_pair | oauth_client | service_account_json | iam_role | iam_keys | workload_identity | other), `label`, `docsUrl`, `verifiedAt`, `status` (verified | unverified, with the reason in `notes`) and `fields`. An `AuthField` has `name`, `env` (omitted when the docs name no variable), `secret`, `required`, `description`, and for non-secret fields only `example` and `default`. Non-secret config (API URL, region, project id) is a field with `secret: false`. Products register a provider at system level with defaults, override per org, and call `validateAuthConfig(providerId, methodId, config)` with field presence (never secret values). It returns missing and unknown fields. `envVars` stays, derived from the default method's fields. No policy: berth says how to authenticate, not who may. Live credential checks are out of scope.
+
 ## 4. Stats and routing (product side, phase 3)
 
 - **Per-run row:** provider, region, container type, create-to-ready ms, setup ms, failure phase and kind, estimated cost, billed cost when the provider reports it.

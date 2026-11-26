@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { ContainerType, Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -77,7 +79,8 @@ export const cloudflare: Provider = {
     description:
       "Sandbox SDK running on Cloudflare Containers; each instance is a microVM with a named instance_type.",
     logo: { simpleIcons: "cloudflare" },
-    envVars: [],
+    auth: AUTH.cloudflare,
+    envVars: envVarsFromAuth(AUTH.cloudflare),
     isolation: ["microvm"],
     regions: [],
     sizingMode: "presets",

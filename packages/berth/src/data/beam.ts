@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { ContainerType, Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -64,7 +66,8 @@ export const beam: Provider = {
     description:
       "Sandbox(cpu, memory, image) on gVisor, with an optional microVM.",
     logo: { brandUrl: "https://beam.cloud" },
-    envVars: [],
+    auth: AUTH.beam,
+    envVars: envVarsFromAuth(AUTH.beam),
     isolation: ["gvisor", "microvm"],
     regions: [],
     sizingMode: "free-form",

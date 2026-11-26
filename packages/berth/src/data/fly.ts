@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { ContainerType, Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -58,7 +60,8 @@ export const fly: Provider = {
     description:
       "Fly Machines presets with monthly list prices, and Sprites hardware-isolated Linux VMs billed by the hour.",
     logo: { simpleIcons: "flydotio" },
-    envVars: [],
+    auth: AUTH.fly,
+    envVars: envVarsFromAuth(AUTH.fly),
     isolation: ["microvm"],
     regions: [
       { id: "iad", name: "Ashburn", geo: "us", selectable: true },

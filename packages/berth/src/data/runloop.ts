@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -12,7 +14,8 @@ export const runloop: Provider = {
     pricingUrl: PRICING,
     description: "Devboxes with suspend and resume.",
     logo: { brandUrl: "https://runloop.ai" },
-    envVars: [],
+    auth: AUTH.runloop,
+    envVars: envVarsFromAuth(AUTH.runloop),
     isolation: ["linux-vm"],
     regions: [],
     sizingMode: "free-form",

@@ -74,6 +74,50 @@ export interface Capabilities {
   };
 }
 
+export const AUTH_KINDS = [
+  "api_key",
+  "token_pair",
+  "oauth_client",
+  "service_account_json",
+  "iam_role",
+  "iam_keys",
+  "workload_identity",
+  "other",
+] as const;
+export type AuthKind = (typeof AUTH_KINDS)[number];
+export const AUTH_STATUS_VALUES = ["verified", "unverified"] as const;
+export type AuthStatus = (typeof AUTH_STATUS_VALUES)[number];
+
+/** One credential or config input of an auth method. Never holds a real value. */
+export interface AuthField {
+  /** Stable id within the method. */
+  name: string;
+  /** Environment variable name as the vendor docs state it; omitted when the docs name none. */
+  env?: string;
+  secret: boolean;
+  required: boolean;
+  description: string;
+  /** Non-secret fields only; never a real value. */
+  example?: string;
+  /** Non-secret fields only, e.g. an API URL. */
+  default?: string;
+}
+
+/** One way a consumer authenticates to a provider. */
+export interface AuthMethod {
+  id: string;
+  kind: AuthKind;
+  label: string;
+  /** Exactly one method per provider has `default: true`. */
+  default?: boolean;
+  docsUrl: string;
+  verifiedAt: string;
+  /** `unverified` when the docs did not confirm it; say why in `notes`. */
+  status: AuthStatus;
+  fields: AuthField[];
+  notes?: string;
+}
+
 export interface ProviderMeta {
   id: string;
   name: string;
@@ -82,7 +126,9 @@ export interface ProviderMeta {
   pricingUrl: string;
   description: string;
   logo: Logo;
-  /** Credential variable names only, never values. */
+  /** How a consumer authenticates. At least one method, exactly one default. */
+  auth: AuthMethod[];
+  /** Credential variable names only, never values. Derived from the default auth method's fields. */
   envVars: string[];
   isolation: IsolationClass[];
   regions: Region[];

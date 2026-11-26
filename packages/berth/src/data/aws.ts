@@ -1,3 +1,5 @@
+import { envVarsFromAuth } from "../catalog/auth.ts";
+import { AUTH } from "./auth.ts";
 import type { Provider } from "../catalog/types.ts";
 import { READ_AT, rate } from "./helpers.ts";
 
@@ -18,7 +20,8 @@ export const aws: Provider = {
     description:
       "Sandbox-shaped AWS services: Lambda MicroVMs, Fargate, EC2 and AgentCore Code Interpreter.",
     logo: { brandUrl: "https://aws.amazon.com/architecture/icons" },
-    envVars: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"],
+    auth: AUTH.aws,
+    envVars: envVarsFromAuth(AUTH.aws),
     isolation: ["container", "microvm", "linux-vm"],
     regions: [
       {

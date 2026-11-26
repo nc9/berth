@@ -6,6 +6,8 @@ import {
   OS_VALUES,
 } from "./primitives.ts";
 import {
+  AUTH_KINDS,
+  AUTH_STATUS_VALUES,
   BILLING_VALUES,
   CURRENCIES,
   DOMAIN_MATCH_VALUES,
@@ -18,6 +20,8 @@ import {
   TYPE_KINDS,
 } from "./types.ts";
 import type {
+  AuthField,
+  AuthMethod,
   Capabilities,
   ContainerType,
   GpuSpec,
@@ -156,6 +160,28 @@ const logoModes = shape<LogoModes>({
   opaque: opt(logoPath),
 });
 
+const authField = shape<AuthField>({
+  name: req(str),
+  env: opt(str),
+  secret: req(bool),
+  required: req(bool),
+  description: req(str),
+  example: opt(str),
+  default: opt(str),
+});
+
+const authMethod = shape<AuthMethod>({
+  id: req(kebab),
+  kind: req(en(AUTH_KINDS)),
+  label: req(str),
+  default: opt(bool),
+  docsUrl: req(https),
+  verifiedAt: req(date),
+  status: req(en(AUTH_STATUS_VALUES)),
+  fields: req(list(authField)),
+  notes: opt(str),
+});
+
 const providerMeta = shape<ProviderMeta>({
   id: req(kebab),
   name: req(str),
@@ -176,6 +202,7 @@ const providerMeta = shape<ProviderMeta>({
       ),
     }),
   ),
+  auth: req({ type: "array", minItems: 1, items: authMethod }),
   envVars: req(list(str)),
   isolation: req(list(en(ISOLATION_CLASSES))),
   regions: req(list(region)),
