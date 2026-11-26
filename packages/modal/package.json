@@ -1,0 +1,16 @@
+{
+  "name": "@nc9/berth-modal",
+  "version": "0.0.0",
+  "description": "Modal Sandbox adapter for berth.",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@nc9/berth-sdk": "workspace:*",
+    "modal": "0.11.2"
+  },
+  "devDependencies": {
+    "@nc9/berth": "workspace:*",
+    "@nc9/berth-conformance": "workspace:*"
+  }
+}
